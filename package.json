@@ -1,0 +1,68 @@
+{
+    "name": "onek",
+    "version": "0.0.1",
+    "description": "1KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+    "main": "./dist/onek.js",
+    "source": "src/index.ts",
+    "umd:main": "./dist/onek.umd.js",
+    "module": "./dist/onek.module.js",
+    "unpkg": "./dist/onek.umd.js",
+    "types": "./src/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./src/onek.d.ts",
+            "browser": "./dist/onek.module.js",
+            "umd": "./dist/onek.umd.js",
+            "import": "./dist/onek.mjs",
+            "require": "./dist/onek.js"
+        }
+    },
+    "scripts": {
+        "build": "microbundle --generateTypes=false",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zheksoon/onek.git"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0"
+    },
+    "devDependencies": {
+        "jest": "^29.0.3",
+        "microbundle": "^0.15.1",
+        "@types/react": "^18.0.0"
+    },
+    "files": [
+        "src/",
+        "dist/",
+        "LICENSE",
+        "README.md",
+        "package.json",
+        "yarn.lock"
+    ],
+    "keywords": [
+        "state",
+        "state management",
+        "react",
+        "reactive",
+        "observable",
+        "computed",
+        "frp",
+        "tfrp",
+        "mobx",
+        "solid",
+        "zustand",
+        "jotai",
+        "1kb"
+    ],
+    "author": "Eugene Daragan",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/zheksoon/onek/issues"
+    },
+    "homepage": "https://github.com/zheksoon/onek#readme",
+    "mangle": {
+        "regex": "^_"
+    }
+}
