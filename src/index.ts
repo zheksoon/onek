@@ -7,4 +7,5 @@ export {
     action,
     configure,
 } from "./core";
+export { shallow } from "./utils";
 export { useReactive } from "./react";

@@ -1,3 +1,5 @@
+import { shallow } from "./utils";
+
 const enum States {
     NOT_INITIALIZED = 0,
     CLEAN = 1,
@@ -106,10 +108,14 @@ class Observable<T = any> {
     public declare _subscribers: Set<Computed | Reaction>;
     public declare _checkFn?: CheckFn<T>;
 
-    constructor(value: T, checkFn?: CheckFn<T>) {
+    constructor(value: T, checkFn?: boolean | CheckFn<T>) {
         this._value = value;
         this._subscribers = new Set();
-        this._checkFn = checkFn && action(checkFn);
+        this._checkFn = checkFn
+            ? typeof checkFn === "function"
+                ? action(checkFn)
+                : shallow
+            : undefined;
     }
 
     _addSubscriber(subscriber) {
@@ -168,14 +174,18 @@ class Computed<T = any> {
     public declare _state: States;
     public declare _checkFn?: CheckFn<T>;
 
-    constructor(fn: () => T, checkFn: CheckFn<T>) {
+    constructor(fn: () => T, checkFn?: boolean | CheckFn<T>) {
         this._fn = fn;
         this._value = undefined;
         this._subscribers = new Set();
         this._subscriptions = [];
         this._subscriptionsToActualize = [];
         this._state = States.NOT_INITIALIZED;
-        this._checkFn = checkFn && action(checkFn);
+        this._checkFn = checkFn
+            ? typeof checkFn === "function"
+                ? action(checkFn)
+                : shallow
+            : undefined;
     }
 
     _removeSubscriptions() {
