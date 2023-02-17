@@ -7,5 +7,5 @@ export {
     action,
     configure,
 } from "./core";
-export { shallow } from "./utils";
-export { useReactive } from "./react";
+export { shallowEquals } from "./utils";
+export { useObserver } from "./react";

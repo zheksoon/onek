@@ -7,7 +7,7 @@
     "umd:main": "./dist/onek.umd.js",
     "module": "./dist/onek.module.js",
     "unpkg": "./dist/onek.umd.js",
-    "types": "./src/index.d.ts",
+    "types": "./types/index.d.ts",
     "exports": {
         ".": {
             "types": "./src/onek.d.ts",
@@ -18,7 +18,7 @@
         }
     },
     "scripts": {
-        "build": "microbundle --generateTypes=false",
+        "build": "microbundle",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
@@ -36,6 +36,7 @@
     "files": [
         "src/",
         "dist/",
+        "types/",
         "LICENSE",
         "README.md",
         "package.json",

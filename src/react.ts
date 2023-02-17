@@ -1,43 +1,48 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction } from './core';
+import { Reaction } from "./core";
 
 const EMPTY_ARRAY = [];
 
-export function useReactive() {
+export function useObserver() {
     const store = useMemo(() => {
         let revision = {};
         let notify;
-        const it = new Reaction(() => {
+
+        const r = new Reaction(() => {
             revision = {};
             notify && notify();
         });
 
-        it._shouldSubscribe = false;
+        r._shouldSubscribe = false;
 
         return {
             _subscribe(_notify) {
                 notify = _notify;
-                it._shouldSubscribe = true;
-                it._subscribe();
+                r._shouldSubscribe = true;
+                r._subscribe();
 
                 return () => {
                     notify = null;
-                    it._shouldSubscribe = false;
-                    it._unsubscribe();
+                    r._shouldSubscribe = false;
+                    r._unsubscribe();
                 };
             },
             _getRevision() {
+                if (!notify && r._revisionsChanged()) {
+                    revision = {};
+                }
+
                 return revision;
             },
-            _it: it,
+            _r: r,
         };
     }, EMPTY_ARRAY);
 
-    const it = store._it;
+    const r = store._r;
 
-    it._unsubscribeAndRemove();
+    r._unsubscribeAndRemove();
 
     useSyncExternalStore(store._subscribe, store._getRevision);
 
-    return it;
+    return r;
 }
