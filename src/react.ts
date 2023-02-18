@@ -6,7 +6,7 @@ const EMPTY_ARRAY = [];
 export function useObserver() {
     const store = useMemo(() => {
         let revision = {};
-        let notify;
+        let notify: null | (() => void) = null;
 
         const r = new Reaction(() => {
             revision = {};
@@ -16,7 +16,7 @@ export function useObserver() {
         r._shouldSubscribe = false;
 
         return {
-            _subscribe(_notify) {
+            _subscribe(_notify: () => void): () => void {
                 notify = _notify;
                 r._shouldSubscribe = true;
                 r._subscribe();

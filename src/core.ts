@@ -410,8 +410,8 @@ class Reaction {
     _addSubscription(subscription: Subscription): void {
         if (!this._shouldSubscribe) {
             this._subscriptions.push(subscription);
-            this._revisions.push(subscription._getRevision());    
-        } else if (!subscription._addSubscriber(this)) {
+            this._revisions.push(subscription._getRevision());
+        } else if (subscription._addSubscriber(this)) {
             this._subscriptions.push(subscription);
         }
     }
@@ -450,6 +450,7 @@ class Reaction {
         this._destructor && this._destructor();
         this._destructor = undefined;
         this._subscriptions = [];
+        this._revisions.length && (this._revisions = []);
     }
 
     _runManager(): void {
