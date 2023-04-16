@@ -24,13 +24,17 @@ export function useObserver<R extends () => any>(
 
         return {
             _subscribe(notify: () => void): () => void {
+                if (subscribers.size === 0) {
+                    r._subscribe();
+                }
+
                 subscribers.add(notify);
 
                 return () => {
                     subscribers.delete(notify);
 
                     if (subscribers.size === 0) {
-                        r._unsubscribeAndRemove();
+                        r._unsubscribe();
                     }
                 };
             },

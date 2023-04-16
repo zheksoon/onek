@@ -387,10 +387,20 @@ class Reaction {
         }
     }
 
-    _unsubscribeAndRemove(): void {
+    _subscribe(): void {
+        this._subscriptions.forEach((subs) => {
+            subs._addSubscriber(this);
+        });
+    }
+
+    _unsubscribe(): void {
         this._subscriptions.forEach((subs) => {
             subs._removeSubscriber(this);
         });
+    }
+
+    _unsubscribeAndRemove(): void {
+        this._unsubscribe();
         this._subscriptions = [];
         this._destructor && this._destructor();
         this._destructor = undefined;

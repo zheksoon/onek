@@ -1,7 +1,7 @@
 {
   "name": "onek",
-  "version": "0.0.3",
-  "description": "1KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+  "version": "0.0.4",
+  "description": "1.6KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "main": "./dist/onek.js",
   "source": "src/index.ts",
   "umd:main": "./dist/onek.umd.js",
@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "build": "microbundle",
+    "build": "microbundle --no-compress",
     "test": "jest"
   },
   "repository": {
