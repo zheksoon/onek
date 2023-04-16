@@ -1,6 +1,6 @@
 {
   "name": "onek",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "1KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "main": "./dist/onek.js",
   "source": "src/index.ts",
@@ -33,6 +33,7 @@
     "@types/react": "^18.0.0",
     "jest": "^29.0.3",
     "microbundle": "^0.15.1",
+    "prettier": "^2.8.7",
     "react": "^18.0.0",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1"

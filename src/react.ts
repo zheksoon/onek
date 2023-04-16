@@ -1,48 +1,60 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useRef, useSyncExternalStore } from "react";
 import { Reaction } from "./core";
 
 const EMPTY_ARRAY = [];
 
-export function useObserver() {
+export function useObserver<R extends () => any>(
+    renderFn?: R
+): R extends () => any ? ReturnType<R> : Reaction {
+    const renderFnRef = useRef(renderFn);
+
     const store = useMemo(() => {
         let revision = {};
-        let notify: null | (() => void) = null;
+        let subscribers = new Set<() => void>();
+        let renderResult = null;
 
-        const r = new Reaction(() => {
+        const reactionBody = () => {
+            renderResult = renderFnRef.current?.();
+        };
+
+        const r = new Reaction(reactionBody, () => {
             revision = {};
-            notify && notify();
+            subscribers.forEach((notify) => notify());
         });
 
-        r._shouldSubscribe = false;
-
         return {
-            _subscribe(_notify: () => void): () => void {
-                notify = _notify;
-                r._shouldSubscribe = true;
-                r._subscribe();
+            _subscribe(notify: () => void): () => void {
+                subscribers.add(notify);
 
                 return () => {
-                    notify = null;
-                    r._shouldSubscribe = false;
-                    r._unsubscribe();
+                    subscribers.delete(notify);
+
+                    if (subscribers.size === 0) {
+                        r._unsubscribeAndRemove();
+                    }
                 };
             },
             _getRevision() {
-                if (!notify && r._revisionsChanged()) {
-                    revision = {};
-                }
-
                 return revision;
             },
-            _r: r,
+            _getRenderResult() {
+                return renderResult;
+            },
+            _reaction: r,
         };
     }, EMPTY_ARRAY);
 
-    const r = store._r;
-
-    r._unsubscribeAndRemove();
+    const r = store._reaction;
 
     useSyncExternalStore(store._subscribe, store._getRevision);
 
-    return r;
+    if (renderFn) {
+        r._run();
+
+        return store._getRenderResult();
+    } else {
+        r._unsubscribeAndRemove();
+
+        return r as any;
+    }
 }

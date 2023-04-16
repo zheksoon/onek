@@ -94,6 +94,14 @@ describe("observable", () => {
 
         r1();
     });
+
+    it("updates value with updater fn", () => {
+        const [o1, seto1] = observable(1);
+
+        seto1((value) => value + 1);
+
+        expect(o1()).toBe(2);
+    });
 });
 
 describe("computed", () => {
@@ -331,6 +339,19 @@ describe("computed", () => {
                 obs[(i + 1) & 127][1](i + 1);
                 expect(value()).toBe(i);
             }
+        });
+
+        it("subscribes to computed only once", () => {
+            const [o1, seto1] = observable(1);
+            const c1 = computed(() => o1() * 2);
+            const c2 = computed(() => c1() + c1());
+
+            expect(c2()).toBe(4);
+            expect(updates(c2)).toBe(1);
+
+            seto1(2);
+            expect(c2()).toBe(8);
+            expect(updates(c2)).toBe(2);
         });
     });
 
@@ -899,10 +920,12 @@ describe("reaction", () => {
     it("reacts to observable changes", () => {
         const [o1, seto1] = observable(1);
 
-        let r1;;
+        let r1;
 
         expect(() => {
-            r1 = reaction(() => { o1() })
+            r1 = reaction(() => {
+                o1();
+            });
         }).not.toThrow();
         expect(updates(r1)).toBe(1);
 
@@ -922,7 +945,9 @@ describe("reaction", () => {
 
         const c1 = computed(() => o1() * 2);
 
-        const r1 = reaction(() => { c1() });
+        const r1 = reaction(() => {
+            c1();
+        });
 
         expect(updates(c1)).toBe(1);
         expect(updates(r1)).toBe(1);
@@ -976,42 +1001,36 @@ describe("reaction", () => {
         expect(() => {
             reaction(() => {
                 seto1(o1() + 1);
-            })
+            });
         }).toThrow();
     });
 
-    describe("child reactions", () => {
-        it("child reaction is disposed when parent runs", () => {
-            const [o1, seto1] = observable(1);
-            const [o2, seto2] = observable(2);
+    it("runs manager function instead of reaction body", () => {
+        const [o1, seto1] = observable(1);
 
-            let r1;
-            const r2 = reaction(() => {
-                o2();
+        const manager = () => {
+            trackUpdate(manager);
+        };
 
-                r1 = reaction(() => {
-                    o1();
-                });
-            });
+        const body = () => {
+            trackUpdate(body);
+            o1();
+        };
 
-            expect(updates(r1)).toBe(1);
-            expect(updates(r2)).toBe(1);
+        const r = reaction(body, manager);
 
-            seto1(20);
+        expect(updates(manager)).toBe(0);
+        expect(updates(body)).toBe(1);
 
-            expect(updates(r1)).toBe(2);
-            expect(updates(r2)).toBe(1);
+        seto1(2);
 
-            const r1_old = r1;
+        expect(updates(manager)).toBe(1);
+        expect(updates(body)).toBe(1);
 
-            seto2(10);
+        seto1(3);
 
-            expect(updates(r1_old)).toBe(2);
-
-            // r1 is a new reaction
-            expect(updates(r1)).toBe(1);
-            expect(updates(r2)).toBe(2);
-        });
+        expect(updates(manager)).toBe(1);
+        expect(updates(body)).toBe(1);
     });
 });
 
@@ -1021,7 +1040,7 @@ describe("tx", () => {
         const [o2, seto2] = observable(2);
 
         const r1 = reaction(() => {
-            o1() + o2()
+            o1() + o2();
         });
 
         expect(updates(r1)).toBe(1);
@@ -1038,7 +1057,9 @@ describe("tx", () => {
         const [o1, seto1] = observable(1);
         const [o2, seto2] = observable(2);
 
-        const r1 = reaction(() => { o1() + o2() });
+        const r1 = reaction(() => {
+            o1() + o2();
+        });
 
         expect(updates(r1)).toBe(1);
 
@@ -1108,7 +1129,9 @@ describe("utx", () => {
         const [o1, seto1] = observable(1);
         const [o2, seto2] = observable(2);
 
-        const r1 = reaction(() => { o1() + o2() });
+        const r1 = reaction(() => {
+            o1() + o2();
+        });
 
         expect(updates(r1)).toBe(1);
 
@@ -1212,7 +1235,9 @@ describe("configure", () => {
             configure({ reactionRunner: custom });
 
             const [o1, seto1] = observable(1);
-            const r1 = reaction(() => { o1() });
+            const r1 = reaction(() => {
+                o1();
+            });
 
             expect(updates(custom)).toBe(0);
 

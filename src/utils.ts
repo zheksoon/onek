@@ -4,29 +4,25 @@ function isPlainObject(obj) {
     return obj.constructor === Object || obj.constructor === null;
 }
 
-export function shallowEqualsArrays(prev: any[], next: any[]) {
-    let idx = prev.length;
-
-    if (idx !== next.length) {
-        return false;
-    }
-
-    while (idx--) {
-        if (prev[idx] !== next[idx]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 export function shallowEquals<T>(prev: T, next: T): boolean {
     if (prev === next) {
         return true;
     }
 
     if (Array.isArray(prev) && Array.isArray(next)) {
-        return shallowEqualsArrays(prev, next);
+        let idx = prev.length;
+
+        if (idx !== next.length) {
+            return false;
+        }
+
+        while (idx--) {
+            if (prev[idx] !== next[idx]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     if (
