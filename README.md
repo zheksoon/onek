@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <b>Onek</b>
+</p>
+
+<p align="center">
 ⚡️ <b>1.7KB</b> full-featured state management inspired by MobX and Solid, <b>batteries included</b> ⚡️
 </p>
 
@@ -18,8 +22,9 @@
   </a>
 </p>
 
-
-**Onek** is a simple but powerful state management library for React based on solid foundation of functional reactive data structures from MobX and Solid.js, providing everything needed for managing state for complex React applications, all in less then 2KB package.
+**Onek** is a simple but powerful state management library for React based on solid foundation of functional reactive
+data structures from MobX and Solid.js, providing everything needed for managing state in complex React applications,
+all in less than 2KB package.
 
 **Features**
 
@@ -46,24 +51,28 @@ const [name, setName] = observable("Eugene");
 const uppercaseName = computed(() => name().toUpperCase());
 
 const NameInput = () => {
-    useObserver();
+  useObserver();
 
-    const onChange = useCallback((e) => setName(e.target.value), [setName]);
-
-    return <input type="text" value={name()} onChange={onChange} />;
+  return (
+    <input
+      type="text"
+      value={name()}
+      onChange={(e) => setName(e.target.value)}
+    />
+  );
 };
 
 const Greeter = () => {
-    useObserver();
+  useObserver();
 
-    return <span>Hello, {uppercaseName()}!</span>;
+  return <span>Hello, {uppercaseName()}!</span>;
 };
 
 root.render(
-    <>
-        <NameInput />
-        <Greeter />
-    </>
+  <>
+    <NameInput />
+    <Greeter />
+  </>
 );
 ```
 
@@ -76,27 +85,27 @@ root.render(
 import { observable, action, useObserver } from "onek";
 
 const makeCounter = (initial) => {
-    const [count, setCount] = observable(initial);
-    const inc = action(() => setCount((count) => count + 1));
-    const dec = action(() => setCount((count) => count - 1));
-    const reset = action(() => setCount(initial));
+  const [count, setCount] = observable(initial);
+  const inc = action(() => setCount((count) => count + 1));
+  const dec = action(() => setCount((count) => count - 1));
+  const reset = action(() => setCount(initial));
 
-    return { count, inc, dec, reset };
+  return { count, inc, dec, reset };
 };
 
 const Counter = ({ counter }) => {
-    const { counter, inc, dec, reset } = counter;
+  const { counter, inc, dec, reset } = counter;
 
-    useObserver();
+  useObserver();
 
-    return (
-        <>
-            <button onClick={inc}>+</button>
-            <button onClick={dec}>-</button>
-            <button onClick={reset}>Reset</button>
-            Count: {counter()}
-        </>
-    );
+  return (
+    <>
+      <button onClick={inc}>+</button>
+      <button onClick={dec}>-</button>
+      <button onClick={reset}>Reset</button>
+      Count: {counter()}
+    </>
+  );
 };
 
 const counter = makeCounter(0);
@@ -114,59 +123,65 @@ import { observable, computed, action, useObserver } from "onek";
 import { makeCounter, Counter } from "./Counter";
 
 const makeCountersList = () => {
-    const [counters, setCounters] = observable([]);
+  const [counters, setCounters] = observable([]);
 
-    const countersCount = computed(() => counters().length);
-    const countersSum = computed(() => counters().reduce((sum, counter) => sum + counter.count(), 0));
+  const countersCount = computed(() => counters().length);
+  const countersSum = computed(() =>
+    counters().reduce((sum, counter) => sum + counter.count(), 0)
+  );
 
-    const addCounter = action(() => {
-        const counter = makeCounter(0);
-        setCounters((counters) => [...counters, counter]);
-    });
-    const removeCounter = action((counter) => {
-        setCounters((counters) => counters.filter((_counter) => _counter !== counter));
-    });
-    const resetAll = action(() => {
-        counters().forEach((counter) => counter.reset());
-    });
+  const addCounter = action(() => {
+    const counter = makeCounter(0);
+    setCounters((counters) => [...counters, counter]);
+  });
 
-    return {
-        counters,
-        countersCount,
-        countersSum,
-        addCounter,
-        removeCounter,
-        resetAll,
-    };
+  const removeCounter = action((counter) => {
+    setCounters((counters) =>
+      counters.filter((_counter) => _counter !== counter)
+    );
+  });
+
+  const resetAll = action(() => {
+    counters().forEach((counter) => counter.reset());
+  });
+
+  return {
+    counters,
+    countersCount,
+    countersSum,
+    addCounter,
+    removeCounter,
+    resetAll,
+  };
 };
 
 const CounterStats = ({ count, sum }) => {
-    useObserver();
+  useObserver();
 
-    return (
-        <>
-            <p>Total count: {count()}</p>
-            <p>Total sum: {sum()}</p>
-        </>
-    );
+  return (
+    <>
+      <p>Total count: {count()}</p>
+      <p>Total sum: {sum()}</p>
+    </>
+  );
 };
 
 const CountersList = ({ model }) => {
-    useObserver();
+  useObserver();
 
-    return (
+  return (
+    <div>
+      <CounterStats count={model.countersCount} sum={model.countersSum} />
+      <button onClick={model.addCounter}>Add</button>
+      <button onClick={model.resetAll}>Reset all</button>
+      {model.counters().map((counter) => (
         <div>
-            <CounterStats count={model.countersCount} sum={model.countersSum} />
-            <button onClick={model.addCounter}>Add</button>
-            <button onClick={model.resetAll}>Reset all</button>
-            {model.counters().map((counter) => (
-                <div>
-                    <Counter model={counter} />
-                    <button onClick={() => model.removeCounter(counter)}>Remove</button>
-                </div>
-            ))}
+          <Counter model={counter} />
+          <button onClick={() => model.removeCounter(counter)}>Remove</button>
         </div>
-    );
+      ))}
+    </div>
+  );
 };
 
 const countersList = makeCountersList();
@@ -185,128 +200,144 @@ import { action, observable, computed, useObserver } from "onek";
 let id = 0;
 
 export const makeTodo = (todoText) => {
-    const [text, setText] = observable(todoText);
-    const [done, setDone] = observable(false);
-    const toggleDone = action(() => {
-        setDone((done) => !done);
-    });
+  const [text, setText] = observable(todoText);
+  const [done, setDone] = observable(false);
+  const toggleDone = action(() => {
+    setDone((done) => !done);
+  });
 
-    return {
-        id: id++,
-        text,
-        done,
-        setText,
-        toggleDone,
-    };
+  return {
+    id: id++,
+    text,
+    done,
+    setText,
+    toggleDone,
+  };
 };
 
 export const makeTodoList = () => {
-    const [text, setText] = observable("");
-    const [todos, setTodos] = observable([], true);
-    const [filter, setFilter] = observable("ALL");
-    const doneTodos = computed(() => {
-        return todos().filter((todo) => todo.done());
-    });
-    const undoneTodos = computed(() => {
-        return todos().filter((todo) => !todo.done());
-    });
-    const visibleTodos = computed(() => {
-        switch (filter()) {
-            case "ALL":
-                return todos();
-            case "DONE":
-                return doneTodos();
-            case "UNDONE":
-                return undoneTodos();
-        }
-    }, true);
-    const addTodo = action(() => {
-        const todo = makeTodo(text());
-        setTodos((todos) => [...todos, todo]);
-        setText("");
-    });
-    const removeTodo = action((todo) => {
-        setTodos((todos) => todos.filter((_todo) => _todo !== todo));
-    });
-    const clearDone = action((todo) => {
-        setTodos(undoneTodos());
-    });
-    return {
-        text,
-        setText,
-        todos,
-        filter,
-        visibleTodos,
-        setFilter,
-        addTodo,
-        removeTodo,
-        clearDone,
-    };
+  const [text, setText] = observable("");
+  const [todos, setTodos] = observable([], true);
+  const [filter, setFilter] = observable("ALL");
+
+  const doneTodos = computed(() => {
+    return todos().filter((todo) => todo.done());
+  });
+
+  const undoneTodos = computed(() => {
+    return todos().filter((todo) => !todo.done());
+  });
+
+  const visibleTodos = computed(() => {
+    switch (filter()) {
+      case "ALL":
+        return todos();
+      case "DONE":
+        return doneTodos();
+      case "UNDONE":
+        return undoneTodos();
+    }
+  }, true);
+
+  const addTodo = action(() => {
+    const todo = makeTodo(text());
+    setTodos((todos) => [...todos, todo]);
+    setText("");
+  });
+
+  const removeTodo = action((todo) => {
+    setTodos((todos) => todos.filter((_todo) => _todo !== todo));
+  });
+
+  const clearDone = action((todo) => {
+    setTodos(undoneTodos());
+  });
+
+  return {
+    text,
+    setText,
+    todos,
+    filter,
+    visibleTodos,
+    setFilter,
+    addTodo,
+    removeTodo,
+    clearDone,
+  };
 };
 
 const FILTER_OPTIONS = [
-    { name: "All", value: "ALL" },
-    { name: "Done", value: "DONE" },
-    { name: "Undone", value: "UNDONE" },
+  { name: "All", value: "ALL" },
+  { name: "Done", value: "DONE" },
+  { name: "Undone", value: "UNDONE" },
 ];
 
 const NewTodoInput = ({ model }) => {
-    const { text, setText, addTodo } = model;
+  const { text, setText, addTodo } = model;
 
-    useObserver();
+  useObserver();
 
-    return (
-        <div>
-            <input onChange={(e) => setText(e.target.value)} value={text()} />
-            <button onClick={addTodo} disabled={text().length === 0}>
-                Add
-            </button>
-        </div>
-    );
+  return (
+    <div>
+      <input onChange={(e) => setText(e.target.value)} value={text()} />
+      <button onClick={addTodo} disabled={text().length === 0}>
+        Add
+      </button>
+    </div>
+  );
 };
 
 const TodoListFilter = ({ model }) => {
-    useObserver();
+  useObserver();
 
-    return (
-        <select value={model.filter()} onChange={(e) => model.setFilter(e.target.value)}>
-            {FILTER_OPTIONS.map(({ name, value }) => (
-                <option key={value} value={value}>
-                    {name}
-                </option>
-            ))}
-        </select>
-    );
+  return (
+    <select
+      value={model.filter()}
+      onChange={(e) => model.setFilter(e.target.value)}
+    >
+      {FILTER_OPTIONS.map(({ name, value }) => (
+        <option key={value} value={value}>
+          {name}
+        </option>
+      ))}
+    </select>
+  );
 };
 
 const Todo = ({ model }) => {
-    useObserver();
+  useObserver();
 
-    return (
-        <div className="todo">
-            <label>
-                <input type="checkbox" checked={model.done()} onChange={model.toggleDone} />
-                <span style={{ textDecoration: model.done() ? "line-through" : "none" }}>
+  return (
+    <div className="todo">
+      <label>
+        <input
+          type="checkbox"
+          checked={model.done()}
+          onChange={model.toggleDone}
+        />
+        <span
+          style={{ textDecoration: model.done() ? "line-through" : "none" }}
+        >
           {model.text()}
         </span>
-            </label>
-        </div>
-    );
+      </label>
+    </div>
+  );
 };
 
 export const TodoList = ({ model }) => {
-    useObserver();
+  useObserver();
 
-    return (
-        <div className="todo-list">
-            <button onClick={model.clearDone}>Clear done</button>
-            <TodoListFilter model={model} />
-            <NewTodoInput model={model} />
-            {model.visibleTodos().map((todo) => (
-                <Todo key={todo.id} model={todo} />
-            ))}
-        </div>
-    );
+  return (
+    <div className="todo-list">
+      <button onClick={model.clearDone}>Clear done</button>
+      <TodoListFilter model={model} />
+      <NewTodoInput model={model} />
+      {model.visibleTodos().map((todo) => (
+        <Todo key={todo.id} model={todo} />
+      ))}
+    </div>
+  );
 };
 ```
 
