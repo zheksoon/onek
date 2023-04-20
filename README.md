@@ -15,7 +15,7 @@
     <img src="https://badgen.net/npm/v/onek?color=5fbfcd"/> 
   </a>
   <a href="https://bundlephobia.com/package/onek" > 
-    <img src="https://badgen.net/badgesize/gzip/file-url/unpkg.com/onek/dist/onek.js?color=5fbfcd"/> 
+    <img src="https://badgen.net/badgesize/brotli/file-url/unpkg.com/onek/dist/onek.mjs?color=5fbfcd"/> 
   </a>
   <a href="https://github.com/zheksoon/onek/blob/main/LICENSE" > 
     <img src="https://badgen.net/github/license/zheksoon/onek?color=5fbfcd"/> 
@@ -23,10 +23,10 @@
 </p>
 
 **Onek** is a simple but powerful state management library for React based on solid foundation of functional reactive
-data structures from MobX and Solid.js, providing everything needed for managing state in complex React applications,
-all in less than 2KB package.
+data structures from **MobX** and **Solid.js**, providing everything needed for managing state in complex **React** applications,
+all in less than **2KB** package.
 
-**Features**
+## Features
 
 - 🚀 Reactive observable and computed values - just like MobX, Solid.js or Preact Signals
 - 👁 Transparency - no data glitches guaranteed
@@ -39,44 +39,218 @@ all in less than 2KB package.
 - ⭐️ Written in 100% TypeScript
 - 📦 ...and all in less than 2KB package
 
-**Examples?**
+## Table of contents
+
+- [Introduction](#introduction)
+  - [Observable values](#observable-values)
+  - [Computed values](#computed-values)
+  - [Using with React](#using-with-react)
+  - [Actions and transactions](#actions-and-transactions)
+  - [Reactions](#reactions)
+- [Examples](#examples)
+  - [Counter](#simple-counter)
+  - [Counter list](#counter-list)
+  - [Toso List](#todo-list)
+
+## Introduction
+
+### Observable values
+
+Define `observable` value. The first value in returned array is getter function, the second is setter - the same convention like `useState` from React:
+
+```js
+import { observable } from "onek";
+
+const [greeting, setGreeting] = observable("hello!");
+
+greeting() === "hello!";
+
+// set value directly
+setGreeting("hola!");
+
+greeting() === "hola!";
+
+// alternative option - updater function
+setGreeting((oldGreeting) => oldGreeting + "!!!");
+
+greeting() === "hola!!!!";
+```
 
 <details>
-    <summary><b>Hello, WORLD!</b> - Basic example of shared state</summary>
+  <summary><b>Extra:</b> equality check argument</summary>
+
+The second argument to `observable` might be equality check function (or `true` for built-in `shallowEquals` implementation):
+
+```js
+import { shallowEquals } from "onek";
+
+const [number, setNumber] = observable(1, true);
+// or equivalently
+const [number, setNumber] = observable(1, shallowEquals);
+
+setNumber(1); // no updates to dependant computeds and reactions
+```
+
+</details>
+
+### Computed values
+
+Define `computed` value. Computed value is like `useMemo` in React - it's cached and return the cached value afterwards. All accessed `observable` or other `computed` values are automatically tracked, there is no need to specify dependency list. Changes to these tracked values automatically invalidate the cached value, which is recalculated on next access to the `computed`:
+
+```js
+import { computed } from "onek";
+
+const loudGreeting = computed(() => greeting().toUpperCase());
+
+loudGreeting() === "HOLA!!!!";
+
+setGreeting("hi!");
+
+loudGreeting() === "HI!";
+```
+
+<details>
+  <summary><b>Extra:</b> equality check argument</summary>
+    
+The second argument to `computed` is also equality check function (or `true` for built-in implementation):
+
+```js
+const [numbers, setNumbers] = observable([1, 2, 3, 4]);
+
+const sortedNumbers = computed(() => numbers().slice().sort(), true);
+
+const result = sortedNumbers();
+
+console.log(result); // [1,2,3,4]
+
+setNumbers([4, 3, 2, 1]);
+
+sortedNumbers() === result; // result is referrentially the same
+```
+
+</details>
+
+### Using with React
+
+Using `observable` and `computed` in React components is as simple as:
 
 ```jsx
 import { observable, computed, useObserver } from "onek";
 
-const [name, setName] = observable("Eugene");
-const uppercaseName = computed(() => name().toUpperCase());
+const [greeting, setGreeting] = observable("hello!");
 
-const NameInput = () => {
+const loudGreeting = computed(() => greeting().toUpperCase());
+
+const LoudGreeting = () => {
+  useObserver();
+
+  return <p>{loudGreeting()}</p>;
+};
+
+const GreetingInput = () => {
   useObserver();
 
   return (
     <input
       type="text"
-      value={name()}
-      onChange={(e) => setName(e.target.value)}
+      onChange={(e) => setGreeting(e.target.value)}
+      value={greeting()}
     />
   );
 };
 
-const Greeter = () => {
-  useObserver();
-
-  return <span>Hello, {uppercaseName()}!</span>;
-};
-
 root.render(
   <>
-    <NameInput />
-    <Greeter />
+    <GreetingInput />
+    <LoudGreeting />
   </>
 );
 ```
 
+`useObserver` hook has no arguments and doesn't return anything :) The only rule - it has to be called before first use of any observable or computed value, and follow "rule of hooks" as well.
+
+<details>
+  <summary><b>Under the hood of this black hook magic</b></summary>
+
+**Onek** internally patches React's `createElement` with very low-overhead addition that allows to track observable and computed values accessed inside the component. This is safe and environmental-friendly, it should not hurt anyone of conflict with other patching library.
+
 </details>
+
+### Actions and transactions
+
+**Actions** automatically batch updates to observable values, and also make access to observable getters untracked - so if your action is called inside component's render function or inside reaction, it won't make it re-render on change of these accessed values.
+
+**Important note**: by default all changes to `observable` values are batched until the end of current microtask. In order to make reaction run synchronous on changes, please read Changing reaction runner
+
+```js
+const [x, setX] = observable(1);
+const [y, setY] = observable(2);
+
+const updateValues = action((value) => {
+  const xValue = x(); // access to x is not tracked by calling reaction or component
+
+  setX(0); // these two updates are batched,
+  setY(xValue + value); // so components will see updated values at once
+});
+
+updateValues(100);
+```
+
+**Transaction** is the same, except it's executed immediately and doesn't make values access untracked:
+
+```js
+import { tx } from "onek";
+
+tx(() => {
+  setX(100);
+  setY(200);
+});
+```
+
+To get the same behaviour as `action` use `utx` (**U**ntracked transaction) instead.
+
+### Reactions
+
+**Reaction** is a way to react to observable or computed changes without involving React. It's the same as `autorun` function from MobX:
+
+```js
+import { reaction } from "onek";
+
+// will print "Greeting is HOLA!!!!"
+const disposer = reaction(() => {
+  console.log("Greeting is " + greeting());
+});
+
+setGreeting("Привет!"); // prints "Привет!"
+
+disposer();
+
+setGreeting("Hello!"); // doesn't print anymore
+
+disposer.run(); // prints "Hello!" again
+```
+
+Return value of reaction body might be **reaction destructor** - a function that is called before each reaction run and on `disposer` call:
+
+```js
+const [topic, setTopic] = observable("something");
+
+const disposer = reaction(() => {
+  const currentTopic = topic();
+
+  subscribeToTopic(currentTopic, callback);
+
+  return () => {
+    unsubscribeFromTopic(currentTopic, callback);
+  };
+});
+
+setTopic("different"); // calls destructor function before executing reaction
+```
+
+## Examples?
+
+### Simple counter
 
 <details>
     <summary><b>Simple counter</b> - Actions and models</summary>
@@ -114,6 +288,8 @@ root.render(<Counter counter={counter} />);
 ```
 
 </details>
+
+### Counter list
 
 <details>
     <summary><b>Counter list with stats</b> - Model composition and computed data</summary>
@@ -190,6 +366,8 @@ root.render(<CountersList model={countersList} />);
 ```
 
 </details>
+
+### Todo List
 
 <details>
   <summary><b>Todo List</b> - Complex multi-component app</summary>
@@ -342,6 +520,10 @@ export const TodoList = ({ model }) => {
 ```
 
 </details>
+
+## License
+
+MIT
 
 ## Author
 

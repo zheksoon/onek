@@ -1,5 +1,57 @@
-import { useMemo, useRef, useSyncExternalStore } from "react";
-import { Reaction, setCurrentReactReaction } from "./core";
+// @ts-ignore
+import React, { useMemo, useSyncExternalStore } from "react";
+import { Reaction, setSubscriber } from "./core";
+
+type AnyComponent = Function & Record<string, any>;
+
+const reactiveComponentsMap = new WeakMap<Function, Function>();
+const isInBrowser = typeof window !== "undefined";
+
+function shouldConstruct(Component: Function) {
+    const prototype = Component.prototype;
+    return !!(prototype && prototype.isReactComponent);
+}
+
+function makeCleanupComponent(component: AnyComponent) {
+    const reactiveComponent = function () {
+        try {
+            return component.apply(this, arguments);
+        } finally {
+            setSubscriber(null);
+        }
+    };
+
+    Object.assign(reactiveComponent, component);
+
+    reactiveComponent.displayName = component.displayName || component.name;
+
+    return reactiveComponent;
+}
+
+if (isInBrowser) {
+    const originalCreateElement = React.createElement;
+
+    React.createElement = function createElement() {
+        const component = arguments[0];
+
+        if (typeof component === "function") {
+            let reactiveComponent = reactiveComponentsMap.get(component) as AnyComponent;
+
+            if (!reactiveComponent) {
+                if (shouldConstruct) {
+                    reactiveComponent = component;
+                } else {
+                    reactiveComponent = makeCleanupComponent(component);
+                }
+                reactiveComponentsMap.set(component, reactiveComponent);
+            }
+
+            arguments[0] = reactiveComponent;
+        }
+
+        return originalCreateElement.apply(this, arguments);
+    };
+}
 
 const EMPTY_ARRAY = [];
 const ABANDONED_RENDER_TIMEOUT = 5000;
@@ -27,6 +79,10 @@ function removeAbandonedRenderCleanup(r: Reaction) {
 }
 
 export function useObserver(): void {
+    if (!isInBrowser) {
+        return;
+    }
+
     const store = useMemo(() => {
         let revision = {};
         let subscribers = new Set<() => void>();
@@ -68,14 +124,11 @@ export function useObserver(): void {
             _getRevision() {
                 return revision;
             },
-            _getRenderResult() {
-                return renderResult;
-            },
             _reaction: r,
         };
     }, EMPTY_ARRAY);
 
     useSyncExternalStore(store._subscribe, store._getRevision);
 
-    setCurrentReactReaction(store._reaction);
+    setSubscriber(store._reaction);
 }

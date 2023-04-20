@@ -69,17 +69,8 @@ function configure(options: Options) {
     }
 }
 
-export function setCurrentReactReaction(r: Reaction) {
-    reactReactions.add(r);
-    subscriber = r;
-    if (!reactReactionsCleanup) {
-        reactReactionsCleanup = Promise.resolve().then(() => {
-            if (reactReactions.has(subscriber as Reaction)) {
-                r = null;
-            }
-            reactReactionsCleanup = null;
-        });
-    }
+export function setSubscriber(_subscriber: Reaction | null) {
+    subscriber = _subscriber;
 }
 
 function tx(fn: () => void): void {

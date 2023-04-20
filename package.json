@@ -1,7 +1,7 @@
 {
   "name": "onek",
-  "version": "0.0.5",
-  "description": "1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+  "version": "0.0.6",
+  "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "main": "./dist/onek.js",
   "source": "src/index.ts",
   "umd:main": "./dist/onek.umd.js",
