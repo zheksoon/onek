@@ -30,12 +30,14 @@ export interface ComputedGetter<T> extends ValueGetter<T> {
 
 export type ReactionDestructorFn = void | undefined | (() => void);
 export type ReactionFn = () => ReactionDestructorFn;
+export type ReactionDestructor = { run: () => void } & (() => void);
 
 type Subscriber = Computed | Reaction;
 type Subscription = Observable | Computed;
 
 export type Options = {
-    reactionsRunner?: (runner: () => void) => void;
+    reactionRunner?: (runner: () => void) => void;
+    reactionExceptionHandler?: (exception: Error) => void;
     cacheOnUntrackedRead?: boolean;
 };
 
@@ -48,11 +50,17 @@ let reactionsQueue: Array<Reaction> = [];
 let reactionsRunner = (runner: () => void) => {
     Promise.resolve().then(runner);
 };
+let reactionExceptionHandler = (exception: Error) => {
+    console.log("Reaction exception:", exception);
+};
 let cacheOnUntrackedRead = true;
 
-function configure(options) {
+function configure(options: Options) {
     if (options.reactionRunner !== undefined) {
         reactionsRunner = options.reactionRunner;
+    }
+    if (options.reactionExceptionHandler !== undefined) {
+        reactionExceptionHandler = options.reactionExceptionHandler;
     }
     if (options.cacheOnUntrackedRead !== undefined) {
         cacheOnUntrackedRead = options.cacheOnUntrackedRead;
@@ -116,7 +124,7 @@ function endTx(): void {
 
 function runReactions(): void {
     try {
-        let i = 1000;
+        let i = 100;
         while (reactionsQueue.length || stateActualizationQueue.length) {
             let comp;
             while ((comp = stateActualizationQueue.pop())) {
@@ -126,10 +134,16 @@ function runReactions(): void {
             while (reactionsQueue.length && --i) {
                 const reactions = reactionsQueue;
                 reactionsQueue = [];
-                reactions.forEach((r) => r._runManager());
+                reactions.forEach((r) => {
+                    try {
+                        r._runManager();
+                    } catch (exception) {
+                        reactionExceptionHandler(exception);
+                    }
+                });
             }
             if (!i) {
-                throw new Error("infinite reactions loop");
+                throw new Error("Infinite reactions loop");
             }
         }
 
@@ -184,7 +198,7 @@ class Observable<T = any> {
 
     _setValue(newValue: T | UpdaterFn<T>, asIs?: boolean): void {
         if (subscriber && subscriber instanceof Computed) {
-            throw new Error("changing observable inside of computed");
+            throw new Error("Changing observable inside of computed");
         }
         if (arguments.length > 0) {
             if (typeof newValue === "function" && !asIs) {
@@ -293,11 +307,14 @@ class Computed<T = any> {
 
     _actualizeAndRecompute(): void {
         if (this._state === State.MAYBE_DIRTY) {
-            this._state = State.CLEAN;
-            this._subscriptionsToActualize.forEach((subs) => {
+            let subs;
+            while ((subs = this._subscriptionsToActualize.pop())) {
                 subs._actualizeAndRecompute();
-            });
-            this._subscriptionsToActualize = [];
+            }
+
+            if (this._state === State.MAYBE_DIRTY) {
+                this._state = State.CLEAN;
+            }
         }
 
         if (this._state !== State.CLEAN) {
@@ -409,7 +426,6 @@ class Reaction {
     _runManager(): void {
         if (!this._isDestroyed) {
             if (this._manager) {
-                this._unsubscribeAndRemove();
                 this._manager();
             } else {
                 this._run();
@@ -438,7 +454,7 @@ class Reaction {
     }
 }
 
-function reaction(fn: ReactionFn, manager?: () => void): () => void {
+function reaction(fn: ReactionFn, manager?: () => void): ReactionDestructor {
     const r = new Reaction(fn, manager);
     const destructor = r._destroy.bind(r);
     destructor.run = r._run.bind(r);
