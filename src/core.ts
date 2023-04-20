@@ -43,17 +43,19 @@ export type Options = {
 
 let txDepth = 0;
 let subscriber: Subscriber | null = null;
-let subscriberChecks: Array<Computed> = [];
-let stateActualizationQueue: Array<Computed> = [];
+const subscriberChecks: Array<Computed> = [];
+const stateActualizationQueue: Array<Computed> = [];
 let reactionsScheduled = false;
 let reactionsQueue: Array<Reaction> = [];
 let reactionsRunner = (runner: () => void) => {
     Promise.resolve().then(runner);
 };
 let reactionExceptionHandler = (exception: Error) => {
-    console.log("Reaction exception:", exception);
+    console.error("Reaction exception:", exception);
 };
 let cacheOnUntrackedRead = true;
+const reactReactions = new WeakSet<Reaction>();
+let reactReactionsCleanup: Promise<void> | null = null;
 
 function configure(options: Options) {
     if (options.reactionRunner !== undefined) {
@@ -64,6 +66,19 @@ function configure(options: Options) {
     }
     if (options.cacheOnUntrackedRead !== undefined) {
         cacheOnUntrackedRead = options.cacheOnUntrackedRead;
+    }
+}
+
+export function setCurrentReactReaction(r: Reaction) {
+    reactReactions.add(r);
+    subscriber = r;
+    if (!reactReactionsCleanup) {
+        reactReactionsCleanup = Promise.resolve().then(() => {
+            if (reactReactions.has(subscriber as Reaction)) {
+                r = null;
+            }
+            reactReactionsCleanup = null;
+        });
     }
 }
 
@@ -126,8 +141,7 @@ function runReactions(): void {
     try {
         let i = 100;
         while (reactionsQueue.length || stateActualizationQueue.length) {
-            let comp;
-            while ((comp = stateActualizationQueue.pop())) {
+            for (let comp; (comp = stateActualizationQueue.pop()); ) {
                 comp._actualizeAndRecompute();
             }
 
@@ -147,8 +161,7 @@ function runReactions(): void {
             }
         }
 
-        let computed;
-        while ((computed = subscriberChecks.pop())) {
+        for (let computed; (computed = subscriberChecks.pop()); ) {
             computed._checkSubscribers();
         }
     } finally {
@@ -189,9 +202,9 @@ class Observable<T = any> {
         !txDepth && endTx();
     }
 
-    _getValue(_subscriber = subscriber): T {
-        if (_subscriber) {
-            _subscriber._addSubscription(this);
+    _getValue(): T {
+        if (subscriber) {
+            subscriber._addSubscription(this);
         }
         return this._value;
     }
@@ -307,10 +320,10 @@ class Computed<T = any> {
 
     _actualizeAndRecompute(): void {
         if (this._state === State.MAYBE_DIRTY) {
-            let subs;
-            while ((subs = this._subscriptionsToActualize.pop())) {
+            this._subscriptionsToActualize.forEach((subs) => {
                 subs._actualizeAndRecompute();
-            }
+            });
+            this._subscriptionsToActualize = [];
 
             if (this._state === State.MAYBE_DIRTY) {
                 this._state = State.CLEAN;
@@ -349,15 +362,15 @@ class Computed<T = any> {
         this._removeSubscriptions();
     }
 
-    _getValue(_subscriber = subscriber): T {
+    _getValue(): T {
         if (this._state === State.COMPUTING) {
             throw new Error("recursive computed call");
         }
 
         this._actualizeAndRecompute();
 
-        if (_subscriber) {
-            _subscriber._addSubscription(this);
+        if (subscriber) {
+            subscriber._addSubscription(this);
         }
 
         return this._value!;
