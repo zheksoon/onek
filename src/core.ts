@@ -11,26 +11,28 @@ const enum State {
 export type CheckFn<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;
 
-export interface ValueGetter<T> {
+export interface Getter<T> {
     (subscriber?: Subscriber): T;
 }
 
-export interface ObservableGetter<T> extends ValueGetter<T> {
-    $$observable: Observable<T>;
-}
-
-export interface ObservableSetter<T> {
+export interface Setter<T> {
     (value: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
-export interface ComputedGetter<T> extends ValueGetter<T> {
+export interface ObservableGetter<T> extends Getter<T> {
+    $$observable: Observable<T>;
+}
+
+export interface ComputedGetter<T> extends Getter<T> {
     destroy(): void;
     $$computed: Computed<T>;
 }
 
-export type ReactionDestructorFn = void | undefined | (() => void);
-export type ReactionFn = () => ReactionDestructorFn;
-export type ReactionDestructor = { run: () => void } & (() => void);
+type ReactionDestructor = () => void;
+type ReactionFnReturnValue = ReactionDestructor | null | undefined | void;
+type ReactionFn = () => ReactionFnReturnValue;
+
+export type ReactionReturnValue = ReactionDestructor & { run: () => void };
 
 type Subscriber = Computed | Reaction;
 type Subscription = Observable | Computed;
@@ -54,8 +56,6 @@ let reactionExceptionHandler = (exception: Error) => {
     console.error("Reaction exception:", exception);
 };
 let cacheOnUntrackedRead = true;
-const reactReactions = new WeakSet<Reaction>();
-let reactReactionsCleanup: Promise<void> | null = null;
 
 function configure(options: Options) {
     if (options.reactionRunner !== undefined) {
@@ -67,10 +67,6 @@ function configure(options: Options) {
     if (options.cacheOnUntrackedRead !== undefined) {
         cacheOnUntrackedRead = options.cacheOnUntrackedRead;
     }
-}
-
-export function setSubscriber(_subscriber: Reaction | null) {
-    subscriber = _subscriber;
 }
 
 function tx(fn: () => void): void {
@@ -188,14 +184,14 @@ class Observable<T = any> {
         this._subscribers.delete(subscriber);
     }
 
-    _notify(): void {
+    _notifyChanged(): void {
         this._subscribers.forEach((subs) => subs._notify(State.DIRTY, this));
         !txDepth && endTx();
     }
 
-    _getValue(): T {
-        if (subscriber) {
-            subscriber._addSubscription(this);
+    _getValue(_subscriber = subscriber): T {
+        if (_subscriber) {
+            _subscriber._addSubscription(this);
         }
         return this._value;
     }
@@ -213,14 +209,14 @@ class Observable<T = any> {
             }
             this._value = newValue as T;
         }
-        this._notify();
+        this._notifyChanged();
     }
 }
 
 function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     const obs = new Observable(value, checkFn);
     const get = obs._getValue.bind(obs) as ObservableGetter<T>;
-    const set = obs._setValue.bind(obs) as ObservableSetter<T>;
+    const set = obs._setValue.bind(obs) as Setter<T>;
 
     get.$$observable = obs;
 
@@ -228,13 +224,13 @@ function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
 }
 
 class Computed<T = any> {
-    public declare _fn: () => T;
     public declare _value?: T;
-    public declare _subscribers: Set<Subscriber>;
+    public declare readonly _subscribers: Set<Subscriber>;
+    public declare readonly _checkFn?: CheckFn<T>;
+    public declare readonly _fn: () => T;
     public declare _subscriptions: Array<Subscription>;
     public declare _subscriptionsToActualize: Array<Computed>;
     public declare _state: State;
-    public declare _checkFn?: CheckFn<T>;
 
     constructor(fn: () => T, checkFn?: boolean | CheckFn<T>) {
         this._fn = fn;
@@ -353,15 +349,15 @@ class Computed<T = any> {
         this._removeSubscriptions();
     }
 
-    _getValue(): T {
+    _getValue(_subscriber = subscriber): T {
         if (this._state === State.COMPUTING) {
             throw new Error("recursive computed call");
         }
 
         this._actualizeAndRecompute();
 
-        if (subscriber) {
-            subscriber._addSubscription(this);
+        if (_subscriber) {
+            _subscriber._addSubscription(this);
         }
 
         return this._value!;
@@ -379,10 +375,10 @@ function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): ComputedGette
 }
 
 class Reaction {
-    public declare _fn: ReactionFn;
-    public declare _manager?: () => void;
+    public declare readonly _fn: ReactionFn;
+    public declare readonly _manager?: () => void;
     public declare _subscriptions: Array<Subscription>;
-    public declare _destructor: ReactionDestructorFn;
+    public declare _destructor: ReactionFnReturnValue;
     public declare _isDestroyed: boolean;
 
     constructor(fn: ReactionFn, manager?: () => void) {
@@ -458,7 +454,7 @@ class Reaction {
     }
 }
 
-function reaction(fn: ReactionFn, manager?: () => void): ReactionDestructor {
+function reaction(fn: ReactionFn, manager?: () => void): ReactionReturnValue {
     const r = new Reaction(fn, manager);
     const destructor = r._destroy.bind(r);
     destructor.run = r._run.bind(r);

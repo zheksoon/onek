@@ -22,8 +22,8 @@
   </a>
 </p>
 
-**Onek** is a simple but powerful state management library for React based on solid foundation of functional reactive
-data structures from **MobX** and **Solid.js**, providing everything needed for managing state in complex **React** applications,
+**Onek** is a simple but powerful state management library for **React** based on solid foundation of functional reactive
+data structures from **MobX** and **Solid.js**, providing everything needed for managing state in complex React applications,
 all in less than **2KB** package.
 
 ## Features
@@ -56,7 +56,7 @@ all in less than **2KB** package.
 
 ### Observable values
 
-Define `observable` value. The first value in returned array is getter function, the second is setter - the same convention like `useState` from React:
+`observable` is a simple function that accepts initial value and returns a tuple of getter and setter functions - the same convention as `useState` from React:
 
 ```js
 import { observable } from "onek";
@@ -89,6 +89,19 @@ const [number, setNumber] = observable(1, true);
 const [number, setNumber] = observable(1, shallowEquals);
 
 setNumber(1); // no updates to dependant computeds and reactions
+```
+
+</details>
+
+<details>
+  <summary><b>Extra:</b> storing functions in observable</summary>
+
+In order to store a function in observable you need to pass `true` as a second argument to setter function. This argument means the setter should store the first argument as-is, without its interpretation as updater function:
+
+```js
+const [callback, setCallback] = observable(() => console.log("hello!"));
+
+setCallback(() => console.log("hola!"), true); // stores callback as is
 ```
 
 </details>
@@ -142,19 +155,19 @@ const [greeting, setGreeting] = observable("hello!");
 const loudGreeting = computed(() => greeting().toUpperCase());
 
 const LoudGreeting = () => {
-  useObserver();
+  const obs = useObserver();
 
-  return <p>{loudGreeting()}</p>;
+  return <p>{loudGreeting(obs)}</p>;
 };
 
 const GreetingInput = () => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <input
       type="text"
       onChange={(e) => setGreeting(e.target.value)}
-      value={greeting()}
+      value={greeting(obs)}
     />
   );
 };
@@ -167,14 +180,18 @@ root.render(
 );
 ```
 
-`useObserver` hook has no arguments and doesn't return anything :) The only rule - it has to be called before first use of any observable or computed value, and follow "rule of hooks" as well.
+`useObserver` hook has no arguments and returns subscriber instance that should be passed to observable and computed values in order to get the component subscribed to them. While it's still correct to read observable values without passing the subscriber, changes to them won't rerender your component:
 
-<details>
-  <summary><b>Under the hood of this black hook magic</b></summary>
+```js
+const [value, setValue] = observable(1);
 
-**Onek** internally patches React's `createElement` with very low-overhead addition that allows to track observable and computed values accessed inside the component. This is safe and environmental-friendly, it should not hurt anyone of conflict with other patching library.
+const Component = () => {
+  const obs = useObserver();
 
-</details>
+  value(obs); // correct, component will subscribe to the value
+  value(); // no subscription
+};
+```
 
 ### Actions and transactions
 
@@ -246,6 +263,8 @@ const disposer = reaction(() => {
 });
 
 setTopic("different"); // calls destructor function before executing reaction
+
+disposer(); // unsubscribes from topic and won't run anymore
 ```
 
 ## Examples?
@@ -270,14 +289,14 @@ const makeCounter = (initial) => {
 const Counter = ({ counter }) => {
   const { counter, inc, dec, reset } = counter;
 
-  useObserver();
+  const obs = useObserver();
 
   return (
     <>
       <button onClick={inc}>+</button>
       <button onClick={dec}>-</button>
       <button onClick={reset}>Reset</button>
-      Count: {counter()}
+      Count: {counter(obs)}
     </>
   );
 };
@@ -332,25 +351,25 @@ const makeCountersList = () => {
 };
 
 const CounterStats = ({ count, sum }) => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <>
-      <p>Total count: {count()}</p>
-      <p>Total sum: {sum()}</p>
+      <p>Total count: {count(obs)}</p>
+      <p>Total sum: {sum(obs)}</p>
     </>
   );
 };
 
 const CountersList = ({ model }) => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <div>
       <CounterStats count={model.countersCount} sum={model.countersSum} />
       <button onClick={model.addCounter}>Add</button>
       <button onClick={model.resetAll}>Reset all</button>
-      {model.counters().map((counter) => (
+      {model.counters(obs).map((counter) => (
         <div>
           <Counter model={counter} />
           <button onClick={() => model.removeCounter(counter)}>Remove</button>
@@ -453,12 +472,12 @@ const FILTER_OPTIONS = [
 const NewTodoInput = ({ model }) => {
   const { text, setText, addTodo } = model;
 
-  useObserver();
+  const obs = useObserver();
 
   return (
     <div>
-      <input onChange={(e) => setText(e.target.value)} value={text()} />
-      <button onClick={addTodo} disabled={text().length === 0}>
+      <input onChange={(e) => setText(e.target.value)} value={text(obs)} />
+      <button onClick={addTodo} disabled={text(obs).length === 0}>
         Add
       </button>
     </div>
@@ -466,11 +485,11 @@ const NewTodoInput = ({ model }) => {
 };
 
 const TodoListFilter = ({ model }) => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <select
-      value={model.filter()}
+      value={model.filter(obs)}
       onChange={(e) => model.setFilter(e.target.value)}
     >
       {FILTER_OPTIONS.map(({ name, value }) => (
@@ -483,20 +502,20 @@ const TodoListFilter = ({ model }) => {
 };
 
 const Todo = ({ model }) => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <div className="todo">
       <label>
         <input
           type="checkbox"
-          checked={model.done()}
+          checked={model.done(obs)}
           onChange={model.toggleDone}
         />
         <span
-          style={{ textDecoration: model.done() ? "line-through" : "none" }}
+          style={{ textDecoration: model.done(obs) ? "line-through" : "none" }}
         >
-          {model.text()}
+          {model.text(obs)}
         </span>
       </label>
     </div>
@@ -504,14 +523,14 @@ const Todo = ({ model }) => {
 };
 
 export const TodoList = ({ model }) => {
-  useObserver();
+  const obs = useObserver();
 
   return (
     <div className="todo-list">
       <button onClick={model.clearDone}>Clear done</button>
       <TodoListFilter model={model} />
       <NewTodoInput model={model} />
-      {model.visibleTodos().map((todo) => (
+      {model.visibleTodos(obs).map((todo) => (
         <Todo key={todo.id} model={todo} />
       ))}
     </div>
