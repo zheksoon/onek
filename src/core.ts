@@ -328,7 +328,8 @@ class Computed<T = any> {
         if (this._state !== State.CLEAN) {
             const oldSubscriber = subscriber;
             const shouldCheck = this._state !== State.NOT_INITIALIZED;
-            const shouldCache = cacheOnUntrackedRead || oldSubscriber;
+            const shouldCache =
+                this._subscribers.size > 0 || cacheOnUntrackedRead || !!oldSubscriber;
             subscriber = shouldCache ? this : null;
             this._state = State.COMPUTING;
             try {
@@ -362,10 +363,16 @@ class Computed<T = any> {
             throw new Error("recursive computed call");
         }
 
-        this._actualizeAndRecompute();
+        const oldSubscriber = subscriber;
+        try {
+            subscriber = _subscriber;
+            this._actualizeAndRecompute();
 
-        if (_subscriber) {
-            _subscriber._addSubscription(this);
+            if (subscriber) {
+                subscriber._addSubscription(this);
+            }
+        } finally {
+            subscriber = oldSubscriber;
         }
 
         return this._value!;

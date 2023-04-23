@@ -17,7 +17,7 @@
       "require": "./dist/onek.js"
     },
     "./compat": {
-      "types": "./types/index.d.ts",
+      "types": "./compat/types/index.d.ts",
       "browser": "./compat/dist/onek.module.js",
       "umd": "./compat/dist/onek.umd.js",
       "import": "./compat/dist/onek.mjs",
@@ -25,7 +25,7 @@
     }
   },
   "scripts": {
-    "build": "microbundle && microbundle --cwd=compat --generateTypes=false && mkdir -p ./compat/types && cp -R ./types ./compat/types",
+    "build": "microbundle & microbundle --cwd=compat --generateTypes=false",
     "build-full": "microbundle --no-compress & microbundle --no-compress --cwd=compat --generateTypes=false",
     "test": "jest"
   },

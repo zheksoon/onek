@@ -1,5 +1,5 @@
 <p align="center">
-  <img align="center" src="https://github.com/zheksoon/onek/blob/main/assets/1K.svg?raw=true" width="150" alt="onek" /> 
+  <img align="center" src="https://github.com/zheksoon/onek/blob/main/assets/1K.svg?raw=true" width="150" alt="Onek" /> 
 </p>
 
 <p align="center">
@@ -12,13 +12,13 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/onek" > 
-    <img src="https://badgen.net/npm/v/onek?color=5fbfcd"/> 
+    <img src="https://badgen.net/npm/v/onek?color=5fbfcd" alt="onek version"/> 
   </a>
   <a href="https://bundlephobia.com/package/onek" > 
-    <img src="https://badgen.net/badgesize/brotli/file-url/unpkg.com/onek/dist/onek.mjs?color=5fbfcd"/> 
+    <img src="https://badgen.net/badgesize/brotli/file-url/unpkg.com/onek/dist/onek.mjs?color=5fbfcd" alt="onek brotli size"/> 
   </a>
   <a href="https://github.com/zheksoon/onek/blob/main/LICENSE" > 
-    <img src="https://badgen.net/github/license/zheksoon/onek?color=5fbfcd"/> 
+    <img src="https://badgen.net/github/license/zheksoon/onek?color=5fbfcd" alt="onek license"/> 
   </a>
 </p>
 
@@ -41,6 +41,7 @@ all in less than **2KB** package.
 
 ## Table of contents
 
+- [Installation](#installation)
 - [Introduction](#introduction)
   - [Observable values](#observable-values)
   - [Computed values](#computed-values)
@@ -50,7 +51,20 @@ all in less than **2KB** package.
 - [Examples](#examples)
   - [Counter](#simple-counter)
   - [Counter list](#counter-list)
-  - [Toso List](#todo-list)
+  - [Todo list](#todo-list)
+- [Recipes](#recipes)
+  - [Configuring reaction scheduler](#reaction-scheduler)
+  - [Catching exceptions in reactions](#reaction-exception-handler)
+  - [Preventing memory leaks](#preventing-memory-leaks)
+- [API Documentation](#api-documentation)
+
+## Installation
+
+```bash
+yarn add onek
+
+npm install --save onek
+```
 
 ## Introduction
 
@@ -188,23 +202,23 @@ const [value, setValue] = observable(1);
 const Component = () => {
   const obs = useObserver();
 
-  value(obs); // correct, component will subscribe to the value
-  value(); // no subscription
+  value(obs); // correct, component will rerender on value change
+  value(); // no rerender on value change
 };
 ```
 
 ### Actions and transactions
 
-**Actions** automatically batch updates to observable values, and also make access to observable getters untracked - so if your action is called inside component's render function or inside reaction, it won't make it re-render on change of these accessed values.
+**Actions** automatically batch updates to observable values, and also make access to observable getters untracked - so if your action is called inside component's render function or inside reaction, it won't make it re-render on accessed values change.
 
-**Important note**: by default all changes to `observable` values are batched until the end of current microtask. In order to make reaction run synchronous on changes, please read Changing reaction runner
+**Important note**: by default all changes to `observable` values are batched until the end of current microtask. In order to run reactions synchronously on transaction end, please read the [Changing reaction scheduler](#reaction-scheduler) section.
 
 ```js
 const [x, setX] = observable(1);
 const [y, setY] = observable(2);
 
 const updateValues = action((value) => {
-  const xValue = x(); // access to x is not tracked by calling reaction or component
+  const xValue = x(); // access to x is not tracked by reaction or component
 
   setX(0); // these two updates are batched,
   setY(xValue + value); // so components will see updated values at once
@@ -226,6 +240,81 @@ tx(() => {
 
 To get the same behaviour as `action` use `utx` (**U**ntracked transaction) instead.
 
+### Async operations
+
+Just define an action with async function:
+
+```js
+const [data, setData] = observable(null);
+const [fetching, setFetching] = observable(false);
+const [error, setError] = observable(null);
+
+const fetchData = action(async () => {
+  try {
+    setFetching(true);
+    const responseData = await axios.get("url");
+    setData(responseData);
+  } catch (err) {
+    setError(err);
+  } finally {
+    setFetching(false);
+  }
+});
+
+await fetchData();
+```
+
+By default, onek uses microtask scheduler for reactions, so updates to observables are batched until the current microtask end. This means both `setData` and `setFetching` will be consistent when any side effects run.
+
+<details>
+  <summary><b>Extra:</b> async operations for synchronous scheduler</summary>
+
+[You can configure](#reaction-scheduler) onek to use synchronous reaction scheduler that will execute side effects synchronously after each transaction end. In this case you need to use `action` for promise handlers or `utx` for code blocks in async function, i.e.:
+
+```js
+const fetchData = action(() => {
+  setFetching(true);
+
+  return axios
+    .get("url")
+    .then(
+      action((data) => {
+        setFetching(false);
+        setData(data);
+      })
+    )
+    .catch(
+      action((err) => {
+        setFetching(false);
+        setError(err);
+      })
+    );
+});
+```
+
+or with async functions:
+
+```js
+const fetchData = action(async () => {
+  setFetching(true);
+
+  try {
+    const data = await axios.fetch("url");
+    utx(() => {
+      setFetching(false);
+      setData(data);
+    });
+  } catch (err) {
+    utx(() => {
+      setFetching(false);
+      setError(err);
+    });
+  }
+});
+```
+
+</details>
+
 ### Reactions
 
 **Reaction** is a way to react to observable or computed changes without involving React. It's the same as `autorun` function from MobX:
@@ -238,14 +327,17 @@ const disposer = reaction(() => {
   console.log("Greeting is " + greeting());
 });
 
-setGreeting("Привет!"); // prints "Привет!"
+setGreeting("Привет!"); // prints "Greeting is Привет!"
 
 disposer();
 
 setGreeting("Hello!"); // doesn't print anymore
 
-disposer.run(); // prints "Hello!" again
+disposer.run(); // prints "Greeting is Hello!" again
 ```
+
+<details>
+  <summary><b>Extra:</b> reaction destructor</summary>
 
 Return value of reaction body might be **reaction destructor** - a function that is called before each reaction run and on `disposer` call:
 
@@ -267,6 +359,8 @@ setTopic("different"); // calls destructor function before executing reaction
 disposer(); // unsubscribes from topic and won't run anymore
 ```
 
+</details>
+
 ## Examples?
 
 ### Simple counter
@@ -287,7 +381,7 @@ const makeCounter = (initial) => {
 };
 
 const Counter = ({ counter }) => {
-  const { counter, inc, dec, reset } = counter;
+  const { count, inc, dec, reset } = counter;
 
   const obs = useObserver();
 
@@ -296,7 +390,7 @@ const Counter = ({ counter }) => {
       <button onClick={inc}>+</button>
       <button onClick={dec}>-</button>
       <button onClick={reset}>Reset</button>
-      Count: {counter(obs)}
+      Count: {count(obs)}
     </>
   );
 };
@@ -371,7 +465,7 @@ const CountersList = ({ model }) => {
       <button onClick={model.resetAll}>Reset all</button>
       {model.counters(obs).map((counter) => (
         <div>
-          <Counter model={counter} />
+          <Counter counter={counter} />
           <button onClick={() => model.removeCounter(counter)}>Remove</button>
         </div>
       ))}
@@ -399,6 +493,7 @@ let id = 0;
 export const makeTodo = (todoText) => {
   const [text, setText] = observable(todoText);
   const [done, setDone] = observable(false);
+
   const toggleDone = action(() => {
     setDone((done) => !done);
   });
@@ -539,6 +634,54 @@ export const TodoList = ({ model }) => {
 ```
 
 </details>
+
+## Recipes
+
+### Reaction scheduler
+
+Reaction scheduler is a function that's called on the end of the first transaction executed after previous scheduler run. It has one argument - `runner` function that should somehow be "scheduled" to run. Default implementation of the scheduler is microtask Promise-based scheduler:
+
+```js
+const reactionScheduler = (runner) => Promise.resolve().then(runner);
+
+configure({ reactionScheduler });
+```
+
+This is a good compromise between speed and developer experience, but sometimes you might want to run all reactions synchronously on transaction end (for example, this is done in onek test suite):
+
+```js
+const reactionScheduler = (runner) => runner();
+
+configure({ reactionScheduler });
+```
+
+Another alternative to the default microtask scheduler is **macro**task scheduler:
+
+```js
+const reactionScheduler = (runner) => setTimeout(runner, 0);
+
+configure({ reactionScheduler });
+```
+
+### Reaction exception handler
+
+Default exception handler for auto-run reactions is just `console.error`. It can be configured by `reactionExceptionHandler` option:
+
+```js
+configure({
+  reactionExceptionHandler: (exception) => {
+    // some exception handling logic
+  },
+});
+```
+
+### Preventing memory leaks
+
+By default `computed` instances cache their values and subscribe to dependencies, when they are read in untracked context.
+
+## API Documentation
+
+WIP
 
 ## License
 
