@@ -1,7 +1,6 @@
-import { useMemo, useSyncExternalStore } from "react";
-import { Reaction } from "./core";
+import { useMemo, useState, useEffect } from "react";
+import { Reaction } from "../../src/core";
 
-type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
 export type Observer = Reaction;
@@ -9,6 +8,7 @@ export type Observer = Reaction;
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
 const NOOP = () => {};
 const CLEANUP_TIMEOUT = 5000;
 
@@ -34,9 +34,9 @@ function addAbandonedRenderCleanup(reaction: Reaction) {
     }
 }
 
-function removeAbandonedRenderCleanup(r: Reaction) {
-    cleanupFutureItems.delete(r);
-    cleanupCurrentItems.delete(r);
+function removeAbandonedRenderCleanup(reaction: Reaction) {
+    cleanupFutureItems.delete(reaction);
+    cleanupCurrentItems.delete(reaction);
 }
 
 export function useObserver(): Observer | undefined {
@@ -44,50 +44,36 @@ export function useObserver(): Observer | undefined {
         return;
     }
 
+    const [, triggerUpdate] = useState(EMPTY_OBJECT);
+
     const store = useMemo(() => {
-        let revision = {};
-        let subscribers = new Set<NotifyFn>();
         let didUnsubscribe = false;
 
         const reaction = new Reaction(NOOP, () => {
-            revision = {};
-            subscribers.forEach((notify) => {
-                notify();
-            });
+            triggerUpdate({});
         });
 
         addAbandonedRenderCleanup(reaction);
 
         return {
-            _subscribe(notify: NotifyFn): UnsubscribeFn {
-                if (didUnsubscribe && !subscribers.size) {
+            _subscriptionEffect(): UnsubscribeFn {
+                if (didUnsubscribe) {
                     reaction._subscribe();
-
                     didUnsubscribe = false;
                 }
-
-                subscribers.add(notify);
 
                 removeAbandonedRenderCleanup(reaction);
 
                 return () => {
-                    subscribers.delete(notify);
-
-                    if (!subscribers.size) {
-                        didUnsubscribe = true;
-
-                        reaction._unsubscribe();
-                    }
+                    reaction._unsubscribe();
+                    didUnsubscribe = true;
                 };
-            },
-            _getRevision() {
-                return revision;
             },
             _reaction: reaction,
         };
     }, EMPTY_ARRAY);
 
-    useSyncExternalStore(store._subscribe, store._getRevision);
+    useEffect(store._subscriptionEffect, EMPTY_ARRAY);
 
     const reaction = store._reaction;
 

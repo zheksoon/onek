@@ -22,7 +22,7 @@
   </a>
 </p>
 
-**Onek** is a simple but powerful state management library for **React** based on solid foundation of functional reactive
+**Onek** (reads as **_one-kay_** or **_one-key_**) is a simple but powerful state management library for **React** based on solid foundation of functional reactive
 data structures from **MobX** and **Solid.js**, providing everything needed for managing state in complex React applications,
 all in less than **2KB** package.
 
@@ -108,7 +108,7 @@ setCallback(() => console.log("hola!"), true); // stores callback as is
 
 ### Computed values
 
-Define `computed` value. Computed value is like `useMemo` in React - it's cached and return the cached value afterwards. All accessed `observable` or other `computed` values are automatically tracked, there is no need to specify dependency list. Changes to these tracked values automatically invalidate the cached value, which is recalculated on next access to the `computed`:
+Computed value is like `useMemo` in React - it's cached and returns the cached value afterwards. All accessed `observable` or other `computed` values are automatically tracked, there is no need to specify dependency list. Changes to these tracked values automatically invalidate the cached value, which is recalculated on next access to the `computed`:
 
 ```js
 import { computed } from "onek";

@@ -1,0 +1,58 @@
+{
+  "name": "onek-compat",
+  "main": "./dist/onek.js",
+  "source": "src/index.ts",
+  "umd:main": "./dist/onek.umd.js",
+  "module": "./dist/onek.module.js",
+  "unpkg": "./dist/onek.umd.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "browser": "./dist/onek.module.js",
+      "umd": "./dist/onek.umd.js",
+      "import": "./dist/onek.mjs",
+      "require": "./dist/onek.js"
+    }
+  },
+  "scripts": {
+    "build": "microbundle --generateTypes=false",
+    "build-full": "microbundle --no-compress --generateTypes=false",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zheksoon/onek.git"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.4.0",
+    "@types/react": ">=16.8.0",
+    "jest": "^29.0.3",
+    "microbundle": "^0.15.1",
+    "prettier": "^2.8.7",
+    "react": ">=16.8.0",
+    "ts-jest": "^29.0.5",
+    "ts-node": "^10.9.1"
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "types/",
+    "LICENSE",
+    "README.md",
+    "package.json",
+    "yarn.lock"
+  ],
+  "author": "Eugene Daragan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zheksoon/onek/issues"
+  },
+  "homepage": "https://github.com/zheksoon/onek#readme",
+  "mangle": {
+    "regex": "^_"
+  }
+}

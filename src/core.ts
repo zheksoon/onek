@@ -6,6 +6,7 @@ const enum State {
     MAYBE_DIRTY = 2,
     DIRTY = 3,
     COMPUTING = 4,
+    DESTROYED = 5,
 }
 
 export type CheckFn<T> = (prev: T, next: T) => boolean;
@@ -223,6 +224,13 @@ function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     return [get, set] as const;
 }
 
+type ComputedState =
+    | State.NOT_INITIALIZED
+    | State.CLEAN
+    | State.MAYBE_DIRTY
+    | State.DIRTY
+    | State.COMPUTING;
+
 class Computed<T = any> {
     public declare _value?: T;
     public declare readonly _subscribers: Set<Subscriber>;
@@ -230,7 +238,7 @@ class Computed<T = any> {
     public declare readonly _fn: () => T;
     public declare _subscriptions: Array<Subscription>;
     public declare _subscriptionsToActualize: Array<Computed>;
-    public declare _state: State;
+    public declare _state: ComputedState;
 
     constructor(fn: () => T, checkFn?: boolean | CheckFn<T>) {
         this._fn = fn;
@@ -296,7 +304,7 @@ class Computed<T = any> {
             this._notifySubscribers(state);
         }
 
-        this._state = state;
+        this._state = state as ComputedState;
 
         if (state === State.MAYBE_DIRTY) {
             this._subscriptionsToActualize.push(subscription as Computed);
@@ -374,19 +382,21 @@ function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): ComputedGette
     return get;
 }
 
+type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
+
 class Reaction {
     public declare readonly _fn: ReactionFn;
     public declare readonly _manager?: () => void;
     public declare _subscriptions: Array<Subscription>;
     public declare _destructor: ReactionFnReturnValue;
-    public declare _isDestroyed: boolean;
+    public declare _state: ReactionState;
 
     constructor(fn: ReactionFn, manager?: () => void) {
         this._fn = fn;
         this._manager = manager;
         this._subscriptions = [];
-        this._destructor = undefined;
-        this._isDestroyed = false;
+        this._destructor = null;
+        this._state = State.CLEAN;
     }
 
     _addSubscription(subscription: Subscription): void {
@@ -398,8 +408,8 @@ class Reaction {
     _notify(state: State, subscription: Subscription): void {
         if (state === State.MAYBE_DIRTY) {
             stateActualizationQueue.push(subscription as Computed);
-        } else {
-            this._unsubscribeAndRemove();
+        } else if (this._state === State.CLEAN) {
+            this._state = State.DIRTY;
             reactionsQueue.push(this);
         }
     }
@@ -420,22 +430,25 @@ class Reaction {
         this._unsubscribe();
         this._subscriptions = [];
         this._destructor && this._destructor();
-        this._destructor = undefined;
+        this._destructor = null;
+        this._state = State.CLEAN;
     }
 
     _runManager(): void {
-        if (!this._isDestroyed) {
-            if (this._manager) {
-                this._manager();
-            } else {
-                this._run();
-            }
+        if (this._state === State.DESTROYED) {
+            return;
+        }
+
+        if (this._manager) {
+            this._manager();
+        } else {
+            this._run();
         }
     }
 
     _destroy(): void {
         this._unsubscribeAndRemove();
-        this._isDestroyed = true;
+        this._state = State.DESTROYED;
     }
 
     _run(): void {
@@ -445,7 +458,6 @@ class Reaction {
         subscriber = this;
         ++txDepth;
         try {
-            this._isDestroyed = false;
             this._destructor = this._fn();
         } finally {
             subscriber = oldSubscriber;

@@ -1,6 +1,6 @@
 {
   "name": "onek",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "main": "./dist/onek.js",
   "source": "src/index.ts",
@@ -10,16 +10,23 @@
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/onek.d.ts",
+      "types": "./types/index.d.ts",
       "browser": "./dist/onek.module.js",
       "umd": "./dist/onek.umd.js",
       "import": "./dist/onek.mjs",
       "require": "./dist/onek.js"
+    },
+    "./compat": {
+      "types": "./types/index.d.ts",
+      "browser": "./compat/dist/onek.module.js",
+      "umd": "./compat/dist/onek.umd.js",
+      "import": "./compat/dist/onek.mjs",
+      "require": "./compat/dist/onek.js"
     }
   },
   "scripts": {
-    "build": "microbundle",
-    "build-full": "microbundle --no-compress",
+    "build": "microbundle && microbundle --cwd=compat --generateTypes=false && mkdir -p ./compat/types && cp -R ./types ./compat/types",
+    "build-full": "microbundle --no-compress & microbundle --no-compress --cwd=compat --generateTypes=false",
     "test": "jest"
   },
   "repository": {
@@ -27,15 +34,15 @@
     "url": "git+https://github.com/zheksoon/onek.git"
   },
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": ">=18.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
-    "@types/react": "^18.0.0",
+    "@types/react": ">=18.0.0",
     "jest": "^29.0.3",
     "microbundle": "^0.15.1",
     "prettier": "^2.8.7",
-    "react": "^18.0.0",
+    "react": ">=18.0.0",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1"
   },
@@ -46,22 +53,41 @@
     "LICENSE",
     "README.md",
     "package.json",
-    "yarn.lock"
+    "yarn.lock",
+    "compat/src",
+    "compat/dist",
+    "compat/types",
+    "compat/package.json"
   ],
   "keywords": [
     "state",
     "state management",
-    "react",
     "reactive",
     "observable",
     "computed",
+    "autorun",
     "frp",
-    "tfrp",
-    "mobx",
-    "solid",
+    "functional reactive programming",
     "zustand",
     "jotai",
-    "1kb"
+    "react",
+    "mobx",
+    "solid",
+    "solid.js",
+    "recoil",
+    "preact signals",
+    "valtio",
+    "unstated",
+    "1kb",
+    "tiny",
+    "small",
+    "compact",
+    "lightweight",
+    "minimal",
+    "performance",
+    "typescript",
+    "hooks",
+    "shallow equality"
   ],
   "author": "Eugene Daragan",
   "license": "MIT",
