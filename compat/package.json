@@ -52,7 +52,13 @@
     "url": "https://github.com/zheksoon/onek/issues"
   },
   "homepage": "https://github.com/zheksoon/onek#readme",
-  "mangle": {
-    "regex": "^_"
+  "minify": {
+    "mangle": {
+      "properties": {
+        "regex": "^_"
+      },
+      "keep_classnames": true,
+      "reserved": ["Observable", "Computed", "Reaction"]
+    }
   }
 }

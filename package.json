@@ -96,7 +96,14 @@
     "url": "https://github.com/zheksoon/onek/issues"
   },
   "homepage": "https://github.com/zheksoon/onek#readme",
-  "mangle": {
-    "regex": "^_"
+  "reserved": ["Observable", "Computed", "Reaction"],
+  "minify": {
+    "mangle": {
+      "properties": {
+        "regex": "^_"
+      },
+      "keep_classnames": true,
+      "reserved": ["Observable", "Computed", "Reaction"]
+    }
   }
 }
