@@ -100,6 +100,6 @@ export type Subscription = ObservableImpl | ComputedImpl;
 export type Revision = {};
 
 export type Options = {
-    reactionRunner?: (runner: () => void) => void;
+    reactionScheduler?: (runner: () => void) => void;
     reactionExceptionHandler?: (exception: Error) => void;
 };

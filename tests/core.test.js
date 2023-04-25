@@ -46,7 +46,7 @@ const getCheck = () => {
 
 beforeAll(() => {
     configure({
-        reactionRunner: (run) => run(),
+        reactionScheduler: (run) => run(),
     });
 });
 
@@ -1213,7 +1213,7 @@ describe("configure", () => {
                 runner();
             };
 
-            configure({ reactionRunner: custom });
+            configure({ reactionScheduler: custom });
 
             const [o1, seto1] = observable(1);
             const r1 = reaction(() => {
@@ -1226,7 +1226,7 @@ describe("configure", () => {
 
             expect(updates(custom)).toBe(1);
 
-            configure({ reactionRunner: (runner) => runner() });
+            configure({ reactionScheduler: (runner) => runner() });
         });
 
         it("microtask runner works as expected", async () => {
@@ -1235,7 +1235,7 @@ describe("configure", () => {
                 Promise.resolve().then(runner);
             };
 
-            configure({ reactionRunner: microtask });
+            configure({ reactionScheduler: microtask });
 
             const [o1, seto1] = observable(1);
             const [o2, seto2] = observable(2);
@@ -1262,7 +1262,7 @@ describe("configure", () => {
             expect(updates(r1)).toBe(2);
             expect(updates(microtask)).toBe(1);
 
-            configure({ reactionRunner: (runner) => runner() });
+            configure({ reactionScheduler: (runner) => runner() });
         });
     });
 });

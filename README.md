@@ -28,16 +28,17 @@ all in less than **2KB** package.
 
 ## Features
 
-- 🚀 Reactive observable and computed values - just like MobX, Solid.js or Preact Signals
-- 👁 Transparency - no data glitches guaranteed
-- 🔄 Transactional updates - no unexpected side-effects
-- 🙈 Laziness - nothing happens until you need a value
-- 🤓 Built-in shallow equality for easily optimizing re-renders
-- 🤔 Not opinionated about structure of your models
-- 🎱 No need for selectors or wrapping your components into lambdas
-- 💯 100% tests coverage with complex cases
-- ⭐️ Written in 100% TypeScript
-- 📦 ...and all in less than 2KB package
+- 🚀 **Reactive observable and computed values** - just like MobX, Solid.js or Preact Signals
+- 👁 **Transparency** - no data glitches guaranteed
+- 🔄 **Transactional updates** - no unexpected side-effects
+- 🙈 **Laziness** - nothing happens until you need a value
+- 🤓 **Built-in shallow equality** - easily optimize re-renders
+- 🤔 **Not opinionated** about structure of your models
+- 🎱 **No need for selectors** or wrapping your components into lambdas
+- 🧩 **Single hook** - effortless integration with React components
+- 💯 **100% test coverage** with complex cases
+- ⭐️ Written in **100% TypeScript**
+- 📦 ...and all in less than **2KB package**
 
 ## Table of contents
 
@@ -55,7 +56,6 @@ all in less than **2KB** package.
 - [Recipes](#recipes)
   - [Configuring reaction scheduler](#reaction-scheduler)
   - [Catching exceptions in reactions](#reaction-exception-handler)
-  - [Preventing memory leaks](#preventing-memory-leaks)
 - [API Documentation](#api-documentation)
 
 ## Installation
@@ -194,7 +194,7 @@ root.render(
 );
 ```
 
-`useObserver` hook has no arguments and returns subscriber instance that should be passed to observable and computed values in order to get the component subscribed to them. While it's still correct to read observable values without passing the subscriber, changes to them won't rerender your component:
+`useObserver` hook has no arguments and returns subscriber instance that should be passed to `observable` and `computed` getters in order to get the component subscribed to them. While it's still correct to read observable values without passing the subscriber, changes to them won't rerender your component:
 
 ```js
 const [value, setValue] = observable(1);
@@ -238,7 +238,16 @@ tx(() => {
 });
 ```
 
-To get the same behaviour as `action` use `utx` (**U**ntracked transaction) instead.
+To get the same behaviour as `action` use `utx` (**U**ntracked transaction) instead:
+
+```js
+const result = utx(() => {
+  setX(1000);
+  setY(2000);
+
+  return x() + y(); // access is untracked
+});
+```
 
 ### Async operations
 
@@ -264,7 +273,7 @@ const fetchData = action(async () => {
 await fetchData();
 ```
 
-By default, onek uses microtask scheduler for reactions, so updates to observables are batched until the current microtask end. This means both `setData` and `setFetching` will be consistent when any side effects run.
+By default, onek uses microtask scheduler for reactions, so updates to observables are batched until the current microtask end. This means both `data` and `fetching` values will be consistent when any side effects run.
 
 <details>
   <summary><b>Extra:</b> async operations for synchronous scheduler</summary>
@@ -674,10 +683,6 @@ configure({
   },
 });
 ```
-
-### Preventing memory leaks
-
-By default `computed` instances cache their values and subscribe to dependencies, when they are read in untracked context.
 
 ## API Documentation
 

@@ -7,7 +7,7 @@ const stateActualizationQueue: Set<ComputedImpl> = new Set();
 let reactionsQueue: Array<ReactionImpl> = [];
 let reactionsScheduled = false;
 
-let reactionsRunner = (runner: () => void) => {
+let reactionScheduler = (runner: () => void) => {
     Promise.resolve().then(runner);
 };
 let reactionExceptionHandler = (exception: Error) => {
@@ -15,8 +15,8 @@ let reactionExceptionHandler = (exception: Error) => {
 };
 
 export function configure(options: Options) {
-    if (options.reactionRunner !== undefined) {
-        reactionsRunner = options.reactionRunner;
+    if (options.reactionScheduler !== undefined) {
+        reactionScheduler = options.reactionScheduler;
     }
     if (options.reactionExceptionHandler !== undefined) {
         reactionExceptionHandler = options.reactionExceptionHandler;
@@ -75,8 +75,9 @@ export function endTx(): void {
         reactionsQueue.length ||
         stateActualizationQueue.size ||
         subscribersCheckQueue.size;
+
     if (!reactionsScheduled && shouldRunReactions) {
         reactionsScheduled = true;
-        reactionsRunner(runReactions);
+        reactionScheduler(runReactions);
     }
 }

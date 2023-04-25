@@ -28,6 +28,7 @@ export class Computed<T = any> implements ComputedImpl<T> {
     _subscriptions: Subscription[] = [];
     _subscriptionsToActualize: Computed[] = [];
     _state: ComputedState = State.NOT_INITIALIZED;
+    _shouldSubscribe = true;
 
     public declare readonly _fn: () => T;
     public declare readonly _checkFn?: CheckFn<T>;
@@ -42,10 +43,16 @@ export class Computed<T = any> implements ComputedImpl<T> {
     }
 
     _addSubscription(subscription: Subscription): void {
-        if (subscription._addSubscriber(this)) {
+        if (!this._shouldSubscribe || subscription._addSubscriber(this)) {
             this._subscriptions.push(subscription);
             this._revisions.push(subscription._getRevision());
         }
+    }
+
+    _subscribe(): void {
+        this._subscriptions.forEach((subs) => {
+            subs._addSubscriber(this);
+        });
     }
 
     _unsubscribe(): void {
@@ -125,18 +132,20 @@ export class Computed<T = any> implements ComputedImpl<T> {
         }
 
         if (this._state !== State.CLEAN) {
-            const oldSubscriber = setSubscriber(this);
             const oldState = this._state;
+            const wasPassive = oldState === State.PASSIVE;
+            const oldSubscriber = setSubscriber(this);
 
             this._subscriptions = [];
             this._revisions = [];
+            this._shouldSubscribe = !wasPassive;
 
             this._state = State.COMPUTING;
 
             try {
                 const newValue = this._fn();
 
-                this._state = State.CLEAN;
+                this._state = wasPassive ? State.PASSIVE : State.CLEAN;
 
                 if (this._checkFn && oldState !== State.NOT_INITIALIZED) {
                     if (this._checkFn(this._value!, newValue)) {
@@ -158,6 +167,11 @@ export class Computed<T = any> implements ComputedImpl<T> {
     _passivate(): void {
         this._unsubscribe();
         this._state = State.PASSIVE;
+    }
+
+    _resurrect(): void {
+        this._subscribe();
+        this._state = State.CLEAN;
     }
 
     _destroy(): void {
@@ -183,8 +197,12 @@ export class Computed<T = any> implements ComputedImpl<T> {
         this._actualizeAndRecompute();
 
         if (subscriber) {
+            if (this._state === State.PASSIVE) {
+                this._resurrect();
+            }
+
             subscriber._addSubscription(this);
-        } else {
+        } else if (!this._subscribers.size) {
             scheduleSubscribersCheck(this);
         }
 
