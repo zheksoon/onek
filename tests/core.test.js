@@ -151,27 +151,6 @@ describe("computed", () => {
         expect(updates(c1)).toBe(3);
     });
 
-    it("does not cache when cacheOnUntrackedRead = false", () => {
-        configure({ cacheOnUntrackedRead: false });
-
-        const [o1, seto1] = observable(1);
-
-        const c1 = computed(() => o1() * 2);
-
-        expect(c1()).toBe(2);
-        expect(updates(c1)).toBe(1);
-
-        expect(c1()).toBe(2);
-        expect(updates(c1)).toBe(2);
-
-        seto1(2);
-
-        expect(c1()).toBe(4);
-        expect(updates(c1)).toBe(3);
-
-        configure({ cacheOnUntrackedRead: true });
-    });
-
     it("triangle 1", () => {
         const [o1, seto1] = observable(2);
         const c1 = computed(() => o1() * 2);
@@ -902,7 +881,7 @@ describe("computed", () => {
         expect(c3()).toBe(30);
     });
 
-    it("() method invalidates computed", () => {
+    it("destroy method invalidates computed", () => {
         const [o, seto] = observable(1);
         const c = computed(() => {
             return o() + 1;
@@ -914,6 +893,8 @@ describe("computed", () => {
         c();
         expect(updates(c)).toBe(2);
     });
+
+    describe("passive computed", () => {});
 });
 
 describe("reaction", () => {

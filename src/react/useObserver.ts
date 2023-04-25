@@ -1,45 +1,21 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction } from "./core";
+import { Reaction } from "../core/classes";
+import {
+    addAbandonedRenderCleanup,
+    removeAbandonedRenderCleanup,
+} from "./abandonedRendererCleanup";
 
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
-export type Observer = Reaction;
+export type Observer = Reaction | undefined;
 
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [];
 const NOOP = () => {};
-const CLEANUP_TIMEOUT = 5000;
 
-let cleanupFutureItems = new Set<Reaction>();
-let cleanupCurrentItems = new Set<Reaction>();
-let cleanupTimeout: ReturnType<typeof setTimeout> | number | null = null;
-
-function addAbandonedRenderCleanup(reaction: Reaction) {
-    cleanupFutureItems.add(reaction);
-
-    if (!cleanupTimeout) {
-        cleanupTimeout = setTimeout(() => {
-            cleanupTimeout = null;
-
-            const items = cleanupCurrentItems;
-            cleanupCurrentItems = cleanupFutureItems;
-            cleanupFutureItems = new Set();
-
-            items.forEach((r) => {
-                r._unsubscribe();
-            });
-        }, CLEANUP_TIMEOUT);
-    }
-}
-
-function removeAbandonedRenderCleanup(r: Reaction) {
-    cleanupFutureItems.delete(r);
-    cleanupCurrentItems.delete(r);
-}
-
-export function useObserver(): Observer | undefined {
+export function useObserver(): Observer {
     if (!isInBrowser) {
         return;
     }
@@ -60,6 +36,8 @@ export function useObserver(): Observer | undefined {
 
         return {
             _subscribe(notify: NotifyFn): UnsubscribeFn {
+                removeAbandonedRenderCleanup(reaction);
+
                 if (didUnsubscribe && !subscribers.size) {
                     reaction._subscribe();
 
@@ -67,8 +45,6 @@ export function useObserver(): Observer | undefined {
                 }
 
                 subscribers.add(notify);
-
-                removeAbandonedRenderCleanup(reaction);
 
                 return () => {
                     subscribers.delete(notify);

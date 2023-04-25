@@ -1,45 +1,21 @@
 import { useMemo, useState, useEffect } from "react";
-import { Reaction } from "../../src/core";
+import { Reaction } from "../../../src/core/classes";
+import {
+    addAbandonedRenderCleanup,
+    removeAbandonedRenderCleanup,
+} from "../../../src/react/abandonedRendererCleanup";
 
 type UnsubscribeFn = () => void;
 
-export type Observer = Reaction;
+export type Observer = Reaction | undefined;
 
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [];
 const EMPTY_OBJECT = {};
 const NOOP = () => {};
-const CLEANUP_TIMEOUT = 5000;
 
-let cleanupFutureItems = new Set<Reaction>();
-let cleanupCurrentItems = new Set<Reaction>();
-let cleanupTimeout: ReturnType<typeof setTimeout> | number | null = null;
-
-function addAbandonedRenderCleanup(reaction: Reaction) {
-    cleanupFutureItems.add(reaction);
-
-    if (!cleanupTimeout) {
-        cleanupTimeout = setTimeout(() => {
-            cleanupTimeout = null;
-
-            const items = cleanupCurrentItems;
-            cleanupCurrentItems = cleanupFutureItems;
-            cleanupFutureItems = new Set();
-
-            items.forEach((r) => {
-                r._unsubscribe();
-            });
-        }, CLEANUP_TIMEOUT);
-    }
-}
-
-function removeAbandonedRenderCleanup(reaction: Reaction) {
-    cleanupFutureItems.delete(reaction);
-    cleanupCurrentItems.delete(reaction);
-}
-
-export function useObserver(): Observer | undefined {
+export function useObserver(): Observer {
     if (!isInBrowser) {
         return;
     }
@@ -57,12 +33,12 @@ export function useObserver(): Observer | undefined {
 
         return {
             _subscriptionEffect(): UnsubscribeFn {
+                removeAbandonedRenderCleanup(reaction);
+
                 if (didUnsubscribe) {
                     reaction._subscribe();
                     didUnsubscribe = false;
                 }
-
-                removeAbandonedRenderCleanup(reaction);
 
                 return () => {
                     reaction._unsubscribe();

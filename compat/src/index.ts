@@ -1,4 +1,13 @@
-export { observable, computed, reaction, tx, utx, action, configure } from "../../src/core";
+export {
+    observable,
+    computed,
+    reaction,
+    tx,
+    utx,
+    action,
+    configure,
+    shallowEquals,
+} from "../../src";
 export type {
     CheckFn,
     UpdaterFn,
@@ -7,7 +16,5 @@ export type {
     ComputedGetter,
     ReactionReturnValue,
     Options,
-} from "../../src/core";
-export { shallowEquals } from "../../src/utils";
-export { useObserver } from "./react";
-export type { Observer } from "./react";
+} from "../../src";
+export { useObserver, Observer } from "./react/useObserver";
