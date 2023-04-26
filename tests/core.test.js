@@ -6,7 +6,7 @@ const {
     utx,
     action,
     configure,
-} = require("../src/core");
+} = require("../packages/onek/src/core");
 
 const updatesMap = new WeakMap();
 

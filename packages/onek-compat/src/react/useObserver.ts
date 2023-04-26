@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
-import { Reaction } from "../../../src/core/classes";
+import { Reaction } from "onek/src/core/classes";
 import {
     addAbandonedRenderCleanup,
     removeAbandonedRenderCleanup,
-} from "../../../src/react/abandonedRendererCleanup";
+} from "onek/src/react/abandonedRendererCleanup";
 
 type UnsubscribeFn = () => void;
 

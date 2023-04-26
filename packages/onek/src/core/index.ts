@@ -10,5 +10,4 @@ export type {
     Setter,
     Disposer,
 } from "./types";
-
 export { Options } from "./types";

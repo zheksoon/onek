@@ -1,0 +1,101 @@
+{
+  "version": "0.0.9",
+  "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zheksoon/onek.git"
+  },
+  "main": "./dist/onek.js",
+  "source": "src/index.ts",
+  "umd:main": "./dist/onek.umd.js",
+  "module": "./dist/onek.module.js",
+  "unpkg": "./dist/onek.umd.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "browser": "./dist/onek.module.js",
+      "umd": "./dist/onek.umd.js",
+      "import": "./dist/onek.mjs",
+      "require": "./dist/onek.js"
+    }
+  },
+  "packageManager": "yarn@3.5.0",
+  "scripts": {
+    "publish": "yarn run build && yarn publish",
+    "build": "yarn exec microbundle",
+    "build-full": "yarn exec microbundle --no-compress",
+    "test": "yarn exec jest"
+  },
+  "files": [
+    "dist/",
+    "types/",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
+  "keywords": [
+    "state",
+    "state management",
+    "reactive",
+    "observable",
+    "computed",
+    "autorun",
+    "frp",
+    "functional reactive programming",
+    "zustand",
+    "jotai",
+    "react",
+    "mobx",
+    "solid",
+    "solid.js",
+    "recoil",
+    "preact signals",
+    "valtio",
+    "unstated",
+    "1kb",
+    "tiny",
+    "small",
+    "compact",
+    "lightweight",
+    "minimal",
+    "performance",
+    "typescript",
+    "hooks",
+    "shallow equality"
+  ],
+  "author": "Eugene Daragan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zheksoon/onek/issues"
+  },
+  "homepage": "https://github.com/zheksoon/onek#readme",
+  "minify": {
+    "mangle": {
+      "properties": {
+        "regex": "^_"
+      },
+      "keep_classnames": true,
+      "reserved": [
+        "Observable",
+        "Computed",
+        "Reaction"
+      ]
+    }
+  },
+  "name": "onek-compat",
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "onek": "workspace:*",
+    "@types/jest": "^29.4.0",
+    "@types/react": ">=16.8.0",
+    "jest": "^29.0.3",
+    "microbundle": "^0.15.1",
+    "prettier": "^2.8.7",
+    "react": ">=18.0.0",
+    "ts-jest": "^29.0.5",
+    "ts-node": "^10.9.1"
+  }
+}
