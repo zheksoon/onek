@@ -32,9 +32,9 @@ all in less than **2KB** package.
 - 👁 **Transparency** - no data glitches guaranteed
 - 🔄 **Transactional updates** - no unexpected side-effects
 - 🙈 **Laziness** - nothing happens until you need a value
+- 💧 **No memory leaks** - optimal computed caching without compromises
 - 🤓 **Built-in shallow equality** - easily optimize re-renders
 - 🤔 **Not opinionated** about structure of your models
-- 🎱 **No need for selectors** or wrapping your components into lambdas
 - 🧩 **Single hook** - effortless integration with React components
 - 💯 **100% test coverage** with complex cases
 - ⭐️ Written in **100% TypeScript**
@@ -56,6 +56,7 @@ all in less than **2KB** package.
 - [Recipes](#recipes)
   - [Configuring reaction scheduler](#reaction-scheduler)
   - [Catching exceptions in reactions](#reaction-exception-handler)
+  - [Memory leaks: why not?](#memory-leaks-why-not)
 - [API Documentation](#api-documentation)
 
 ## Installation
@@ -651,25 +652,25 @@ export const TodoList = ({ model }) => {
 Reaction scheduler is a function that's called on the end of the first transaction executed after previous scheduler run. It has one argument - `runner` function that should somehow be "scheduled" to run. Default implementation of the scheduler is microtask Promise-based scheduler:
 
 ```js
-const reactionScheduler = (runner) => Promise.resolve().then(runner);
+const reaction = (runner) => Promise.resolve().then(runner);
 
-configure({ reactionScheduler });
+configure({ reaction });
 ```
 
 This is a good compromise between speed and developer experience, but sometimes you might want to run all reactions synchronously on transaction end (for example, this is done in onek test suite):
 
 ```js
-const reactionScheduler = (runner) => runner();
+const reaction = (runner) => runner();
 
-configure({ reactionScheduler });
+configure({ reaction });
 ```
 
 Another alternative to the default microtask scheduler is **macro**task scheduler:
 
 ```js
-const reactionScheduler = (runner) => setTimeout(runner, 0);
+const reaction = (runner) => setTimeout(runner, 0);
 
-configure({ reactionScheduler });
+configure({ reaction });
 ```
 
 ### Reaction exception handler
@@ -684,9 +685,118 @@ configure({
 });
 ```
 
+### Memory leaks: why not?
+
+Onek does not have memory leaks while maintaining optimal caching for computed values. There is no `keepAlive` option like `MobX` has, and here's why. When a computed value has lost its last subscriber or being read in untracked context without existing subscribers, it enters **passive** state. The state means the computed is no longer referenced by any observable or other computed, but still holds references to its dependencies, so it can check later if some of them changed.
+
+How is the change detection possible without guarantees that values stored in observables and computeds are immutable? The answer is simple: along with the value, observables and computeds store **revision** - an immutable plain object that is new each time observable or computed updated. This allows to implement `reselect`-like logic of checking computed dependencies with very small overhead and preserve cached values without any memory leaks.
+
 ## API Documentation
 
-WIP
+### Interfaces
+
+Here's some general interfaces used in the following documentation:
+
+```ts
+import { ComputedImpl, ObservableImpl } from "./types";
+
+type Subscriber = ComputedImpl | ReactionImpl;
+
+interface Getter<T> {
+  (subscriber?: Subscriber): T;
+}
+
+interface ObservableGetter<T> extends Getter<T> {
+  $$observable: ObservableImpl<T>;
+}
+
+interface ComputedGetter<T> extends Getter<T> {
+  $$computed: ComputedImpl<T>;
+
+  destroy(): void;
+}
+
+interface Setter<T> {
+  (value?: T | UpdaterFn<T>, asIs?: boolean): void;
+}
+
+type CheckFn<T> = (prev: T, next: T) => boolean;
+type UpdaterFn<T> = (prevValue: T) => T;
+```
+
+### observable
+
+```ts
+function observable<T>(
+  value: T,
+  checkFn?: boolean | CheckFn<T>
+): readonly [ObservableGetter<T>, Setter<T>];
+```
+
+Creates getter and setter for reactive value. `value` argument as a value stored in the observable instance, `checkFn` is a function that's used for checking if new value from the setter is the same as the old one.
+Getter is a function that can accept `Subscriber` - return value of `useObserver` hook or value of `$$computed` attribute of computed getter.
+Setter function can accept `value` argument that can be of generic type or updater function that returns a value of the generic type.
+The second argument to setter function is `asIs` boolean that indicates if the `value` should be stored as is without interpreting it as updater function.
+Setter also can be called without arguments - this will mark the observable as changed without changing its value. This can be useful when you mutate observable value directly without changing reference to it.
+
+### computed
+
+```ts
+function computed<T>(
+  fn: () => T,
+  checkFn?: boolean | CheckFn<T>
+): ComputedGetter<T>;
+```
+
+### reaction
+
+```ts
+type Destructor = (() => void) | null | undefined | void;
+
+type Disposer = (() => void) & { run: () => void };
+
+function reaction(fn: () => Destructor, manager?: () => void): Disposer;
+```
+
+## action
+
+```ts
+function action<Args extends any[], T>(
+  fn: (...args: Args) => T
+): (...args: Args) => T;
+```
+
+## tx
+
+```ts
+function tx(fn: () => void): void;
+```
+
+## utx
+
+```ts
+function utx<T>(fn: () => T, subscriber = null): T;
+```
+
+### untracked
+
+```ts
+function untracked<Args extends any[], T>(
+  fn: (...args: Args) => T
+): (...args: Args) => T;
+```
+
+### useObserver
+
+```ts
+function useObserver(): Subscriber | undefined;
+```
+
+### shallowEquals
+
+```ts
+function shallowEquals<T>(prev: T, next: T): boolean;
+```
 
 ## License
 

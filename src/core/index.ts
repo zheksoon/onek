@@ -1,5 +1,5 @@
 export { observable, computed, reaction } from "./classes";
-export { configure } from "./reactionScheduler";
+export { configure } from "./schedulers/reaction";
 export { tx, utx, untracked, action } from "./transaction";
 export type {
     CheckFn,
@@ -7,6 +7,8 @@ export type {
     Getter,
     ObservableGetter,
     ComputedGetter,
-    ReactionReturnValue,
-    Options,
+    Setter,
+    Disposer,
 } from "./types";
+
+export { Options } from "./types";

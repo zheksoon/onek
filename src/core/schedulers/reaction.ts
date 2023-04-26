@@ -1,11 +1,11 @@
-import { ComputedImpl, Options, ReactionImpl } from "./types";
+import { Computed, Reaction } from "../classes";
+import { Options } from "../types";
+import { MAX_REACTION_ITERATIONS } from "../constants";
 
-const MAX_REACTION_ITERATIONS = 100;
-
-const subscribersCheckQueue: Set<ComputedImpl> = new Set();
-const stateActualizationQueue: Set<ComputedImpl> = new Set();
-let reactionsQueue: Array<ReactionImpl> = [];
-let reactionsScheduled = false;
+const subscribersCheckQueue: Set<Computed> = new Set();
+const stateActualizationQueue: Set<Computed> = new Set();
+let reactionsQueue: Array<Reaction> = [];
+let isRunnerScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
     Promise.resolve().then(runner);
@@ -23,16 +23,16 @@ export function configure(options: Options) {
     }
 }
 
-export function scheduleReaction(reaction: ReactionImpl) {
+export function scheduleReaction(reaction: Reaction) {
     reactionsQueue.push(reaction);
 }
 
-export function scheduleSubscribersCheck(computed: ComputedImpl) {
-    subscribersCheckQueue.add(computed);
+export function scheduleStateActualization(computed: Computed) {
+    stateActualizationQueue.add(computed);
 }
 
-export function scheduleStateActualization(computed: ComputedImpl) {
-    stateActualizationQueue.add(computed);
+export function scheduleSubscribersCheck(computed: Computed) {
+    subscribersCheckQueue.add(computed);
 }
 
 function runReactions(): void {
@@ -65,19 +65,19 @@ function runReactions(): void {
         });
         subscribersCheckQueue.clear();
 
-        reactionsScheduled = false;
+        isRunnerScheduled = false;
         reactionsQueue = [];
     }
 }
 
-export function endTx(): void {
+export function scheduleReactionRunner(): void {
     const shouldRunReactions =
         reactionsQueue.length ||
         stateActualizationQueue.size ||
         subscribersCheckQueue.size;
 
-    if (!reactionsScheduled && shouldRunReactions) {
-        reactionsScheduled = true;
+    if (!isRunnerScheduled && shouldRunReactions) {
+        isRunnerScheduled = true;
         reactionScheduler(runReactions);
     }
 }

@@ -14,7 +14,7 @@ export type {
     Getter,
     ObservableGetter,
     ComputedGetter,
-    ReactionReturnValue,
+    Disposer,
     Options,
 } from "../../src";
 export { useObserver, Observer } from "./react/useObserver";

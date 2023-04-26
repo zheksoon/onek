@@ -1,12 +1,8 @@
-export const enum State {
-    NOT_INITIALIZED = 0,
-    CLEAN = 1,
-    MAYBE_DIRTY = 2,
-    DIRTY = 3,
-    COMPUTING = 4,
-    PASSIVE = 5,
-    DESTROYED = 6,
-}
+import { State } from "./constants";
+
+export type Subscriber = ComputedImpl | ReactionImpl;
+export type Subscription = ObservableImpl | ComputedImpl;
+export type Revision = {};
 
 export declare class ObservableImpl<T = any> {
     constructor(value: T, checkFn?: boolean | CheckFn<T>);
@@ -19,7 +15,7 @@ export declare class ObservableImpl<T = any> {
 
     _getValue(_subscriber?: Subscriber): T;
 
-    _setValue(newValue: T | UpdaterFn<T>, asIs?: boolean): void;
+    _setValue(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
 export declare class ComputedImpl<T = any> {
@@ -37,14 +33,16 @@ export declare class ComputedImpl<T = any> {
 
     _actualizeAndRecompute(): void;
 
-    _passivate(): void;
-
     _destroy(): void;
 
     _getRevision(): Revision;
 
     _getValue(_subscriber?: Subscriber): T;
 }
+
+export type Destructor = (() => void) | null | undefined | void;
+export type ReactionFn = () => Destructor;
+export type Disposer = (() => void) & { run: () => void };
 
 export declare class ReactionImpl {
     constructor(fn: ReactionFn, manager?: () => void);
@@ -72,7 +70,7 @@ export interface Getter<T> {
 }
 
 export interface Setter<T> {
-    (value: T | UpdaterFn<T>, asIs?: boolean): void;
+    (value?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
 export interface ObservableGetter<T> extends Getter<T> {
@@ -84,20 +82,6 @@ export interface ComputedGetter<T> extends Getter<T> {
 
     destroy(): void;
 }
-
-export type ReactionDestructor = () => void;
-export type ReactionFnReturnValue =
-    | ReactionDestructor
-    | null
-    | undefined
-    | void;
-export type ReactionFn = () => ReactionFnReturnValue;
-
-export type ReactionReturnValue = ReactionDestructor & { run: () => void };
-
-export type Subscriber = ComputedImpl | ReactionImpl;
-export type Subscription = ObservableImpl | ComputedImpl;
-export type Revision = {};
 
 export type Options = {
     reactionScheduler?: (runner: () => void) => void;

@@ -17,8 +17,8 @@ export function addAbandonedRenderCleanup(reaction: Reaction) {
             cleanupCurrentItems = cleanupFutureItems;
             cleanupFutureItems = new Set();
 
-            items.forEach((r) => {
-                r._unsubscribe();
+            items.forEach((reaction) => {
+                reaction._unsubscribe();
             });
         }, CLEANUP_TIMEOUT);
     }

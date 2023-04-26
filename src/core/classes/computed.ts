@@ -4,13 +4,13 @@ import {
     ComputedGetter,
     ComputedImpl,
     Revision,
-    State,
     Subscriber,
     Subscription,
 } from "../types";
 import { untracked } from "../transaction";
-import { setSubscriber, subscriber } from "../globals";
-import { scheduleSubscribersCheck } from "../reactionScheduler";
+import { setSubscriber, subscriber } from "../subscriber";
+import { scheduleSubscribersCheck } from "../schedulers/reaction";
+import { State } from "../constants";
 
 export type ComputedState =
     | State.NOT_INITIALIZED
@@ -21,17 +21,17 @@ export type ComputedState =
     | State.PASSIVE;
 
 export class Computed<T = any> implements ComputedImpl<T> {
-    _value: T | undefined = undefined;
-    _revision: Revision = {};
-    _subscribers: Set<Subscriber> = new Set();
-    _revisions: Revision[] = [];
-    _subscriptions: Subscription[] = [];
-    _subscriptionsToActualize: Computed[] = [];
-    _state: ComputedState = State.NOT_INITIALIZED;
-    _shouldSubscribe = true;
+    private _value: T | undefined = undefined;
+    private _revision: Revision = {};
+    private _subscribers: Set<Subscriber> = new Set();
+    private _revisions: Revision[] = [];
+    private _subscriptions: Subscription[] = [];
+    private _subscriptionsToActualize: Computed[] = [];
+    private _state: ComputedState = State.NOT_INITIALIZED;
+    private _shouldSubscribe = true;
 
-    public declare readonly _fn: () => T;
-    public declare readonly _checkFn?: CheckFn<T>;
+    private declare readonly _fn: () => T;
+    private declare readonly _checkFn?: CheckFn<T>;
 
     constructor(fn: () => T, checkFn?: boolean | CheckFn<T>) {
         this._fn = fn;
@@ -49,18 +49,6 @@ export class Computed<T = any> implements ComputedImpl<T> {
         }
     }
 
-    _subscribe(): void {
-        this._subscriptions.forEach((subs) => {
-            subs._addSubscriber(this);
-        });
-    }
-
-    _unsubscribe(): void {
-        this._subscriptions.forEach((subs) => {
-            subs._removeSubscriber(this);
-        });
-    }
-
     _addSubscriber(subscriber: Subscriber): boolean {
         if (!this._subscribers.has(subscriber)) {
             this._subscribers.add(subscriber);
@@ -75,12 +63,6 @@ export class Computed<T = any> implements ComputedImpl<T> {
         if (!this._subscribers.size) {
             scheduleSubscribersCheck(this);
         }
-    }
-
-    _notifySubscribers(state: State): void {
-        this._subscribers.forEach((subs) => {
-            subs._notify(state, this);
-        });
     }
 
     _checkSubscribers(): void {
@@ -164,16 +146,6 @@ export class Computed<T = any> implements ComputedImpl<T> {
         }
     }
 
-    _passivate(): void {
-        this._unsubscribe();
-        this._state = State.PASSIVE;
-    }
-
-    _resurrect(): void {
-        this._subscribe();
-        this._state = State.CLEAN;
-    }
-
     _destroy(): void {
         this._unsubscribe();
         this._subscriptions = [];
@@ -207,6 +179,34 @@ export class Computed<T = any> implements ComputedImpl<T> {
         }
 
         return this._value!;
+    }
+
+    private _subscribe(): void {
+        this._subscriptions.forEach((subs) => {
+            subs._addSubscriber(this);
+        });
+    }
+
+    private _unsubscribe(): void {
+        this._subscriptions.forEach((subs) => {
+            subs._removeSubscriber(this);
+        });
+    }
+
+    private _notifySubscribers(state: State): void {
+        this._subscribers.forEach((subs) => {
+            subs._notify(state, this);
+        });
+    }
+
+    private _passivate(): void {
+        this._unsubscribe();
+        this._state = State.PASSIVE;
+    }
+
+    private _resurrect(): void {
+        this._subscribe();
+        this._state = State.CLEAN;
     }
 }
 

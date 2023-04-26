@@ -4,22 +4,22 @@ import {
     ObservableImpl,
     Revision,
     Setter,
-    State,
     Subscriber,
     UpdaterFn,
 } from "../types";
 import { txDepth, untracked } from "../transaction";
-import { subscriber } from "../globals";
+import { subscriber } from "../subscriber";
 import { Computed } from "./computed";
-import { endTx } from "../reactionScheduler";
+import { scheduleReactionRunner } from "../schedulers/reaction";
 import { shallowEquals } from "../utils/shallowEquals";
+import { State } from "../constants";
 
 export class Observable<T = any> implements ObservableImpl<T> {
-    _revision: Revision = {};
-    _subscribers: Set<Subscriber> = new Set();
+    private _revision: Revision = {};
+    private _subscribers: Set<Subscriber> = new Set();
 
-    public declare _value: T;
-    public declare readonly _checkFn?: CheckFn<T>;
+    private declare _value: T;
+    private declare readonly _checkFn?: CheckFn<T>;
 
     constructor(value: T, checkFn?: boolean | CheckFn<T>) {
         this._value = value;
@@ -42,11 +42,6 @@ export class Observable<T = any> implements ObservableImpl<T> {
         this._subscribers.delete(subscriber);
     }
 
-    _notifyChanged(): void {
-        this._subscribers.forEach((subs) => subs._notify(State.DIRTY, this));
-        !txDepth && endTx();
-    }
-
     _getRevision(): Revision {
         return this._revision;
     }
@@ -58,7 +53,7 @@ export class Observable<T = any> implements ObservableImpl<T> {
         return this._value;
     }
 
-    _setValue(newValue: T | UpdaterFn<T>, asIs?: boolean): void {
+    _setValue(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
         if (subscriber && subscriber instanceof Computed) {
             throw new Error("Changing observable inside of computed");
         }
@@ -74,9 +69,14 @@ export class Observable<T = any> implements ObservableImpl<T> {
         }
         this._notifyChanged();
     }
+
+    private _notifyChanged(): void {
+        this._subscribers.forEach((subs) => subs._notify(State.DIRTY, this));
+        !txDepth && scheduleReactionRunner();
+    }
 }
 
-export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
+export function observable<T>(value?: T, checkFn?: boolean | CheckFn<T>) {
     const obs = new Observable(value, checkFn);
     const get = obs._getValue.bind(obs) as ObservableGetter<T>;
     const set = obs._setValue.bind(obs) as Setter<T>;

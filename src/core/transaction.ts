@@ -1,5 +1,6 @@
-import { setSubscriber } from "./globals";
-import { endTx } from "./reactionScheduler";
+import { setSubscriber } from "./subscriber";
+import { scheduleReactionRunner } from "./schedulers/reaction";
+import { Subscriber } from "./types";
 
 export let txDepth = 0;
 
@@ -8,18 +9,18 @@ export function tx(fn: () => void): void {
     try {
         fn();
     } finally {
-        if (!--txDepth) endTx();
+        if (!--txDepth) scheduleReactionRunner();
     }
 }
 
-export function utx<T>(fn: () => T, subscriber = null): T {
+export function utx<T>(fn: () => T, subscriber: Subscriber | null = null): T {
     const oldSubscriber = setSubscriber(subscriber);
     ++txDepth;
     try {
         return fn();
     } finally {
         setSubscriber(oldSubscriber);
-        if (!--txDepth) endTx();
+        if (!--txDepth) scheduleReactionRunner();
     }
 }
 
@@ -46,7 +47,7 @@ export function action<Args extends any[], T>(
             return fn.apply(this, arguments);
         } finally {
             setSubscriber(oldSubscriber);
-            if (!--txDepth) endTx();
+            if (!--txDepth) scheduleReactionRunner();
         }
     };
 }

@@ -24,6 +24,7 @@
       "require": "./compat/dist/onek.js"
     }
   },
+  "packageManager": "yarn@3.5.0",
   "scripts": {
     "build": "microbundle & microbundle --cwd=compat --generateTypes=false",
     "build-full": "microbundle --no-compress & microbundle --no-compress --cwd=compat --generateTypes=false",
@@ -96,14 +97,22 @@
     "url": "https://github.com/zheksoon/onek/issues"
   },
   "homepage": "https://github.com/zheksoon/onek#readme",
-  "reserved": ["Observable", "Computed", "Reaction"],
+  "reserved": [
+    "Observable",
+    "Computed",
+    "Reaction"
+  ],
   "minify": {
     "mangle": {
       "properties": {
         "regex": "^_"
       },
       "keep_classnames": true,
-      "reserved": ["Observable", "Computed", "Reaction"]
+      "reserved": [
+        "Observable",
+        "Computed",
+        "Reaction"
+      ]
     }
   }
 }
