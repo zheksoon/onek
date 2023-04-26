@@ -168,12 +168,12 @@ export class Computed<T = any> implements ComputedImpl<T> {
 
         this._actualizeAndRecompute();
 
-        if (subscriber) {
+        if (_subscriber) {
             if (this._state === State.PASSIVE) {
                 this._resurrect();
             }
 
-            subscriber._addSubscription(this);
+            _subscriber._addSubscription(this);
         } else if (!this._subscribers.size) {
             scheduleSubscribersCheck(this);
         }
