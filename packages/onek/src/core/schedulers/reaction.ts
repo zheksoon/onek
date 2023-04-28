@@ -10,7 +10,7 @@ let isRunnerScheduled = false;
 let reactionScheduler = (runner: () => void) => {
     Promise.resolve().then(runner);
 };
-let reactionExceptionHandler = (exception: Error) => {
+let reactionExceptionHandler = (exception: any) => {
     console.error("Reaction exception:", exception);
 };
 
@@ -50,7 +50,7 @@ function runReactions(): void {
                 reactions.forEach((r) => {
                     try {
                         r._runManager();
-                    } catch (exception) {
+                    } catch (exception: any) {
                         reactionExceptionHandler(exception);
                     }
                 });
@@ -61,7 +61,7 @@ function runReactions(): void {
         }
     } finally {
         subscribersCheckQueue.forEach((computed) => {
-            computed._checkSubscribers();
+            computed._checkSubscribersAndPassivate();
         });
         subscribersCheckQueue.clear();
 

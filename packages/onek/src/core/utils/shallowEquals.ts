@@ -1,6 +1,6 @@
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
-function isPlainObject(obj) {
+function isPlainObject(obj: any): obj is Object {
     return obj.constructor === Object || obj.constructor === null;
 }
 
@@ -44,6 +44,7 @@ export function shallowEquals<T>(prev: T, next: T): boolean {
         while (index-- > 0) {
             let key = prevKeys[index];
 
+            // @ts-ignore
             if (!hasOwnProperty.call(next, key) || prev[key] !== next[key]) {
                 return false;
             }

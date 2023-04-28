@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "onek/*": ["./packages/onek/*"]
+    },
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "es2017",
+    "module": "commonjs",
+    "strict": true
+  },
+  "include": ["./packages/**/*"]
+}

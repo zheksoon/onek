@@ -1,4 +1,4 @@
-import { Disposer, ReactionFn, ReactionImpl, Subscription } from "../types";
+import { Destructor, Disposer, ReactionFn, ReactionImpl, Subscription } from "../types";
 import {
     scheduleReaction,
     scheduleStateActualization,
@@ -10,8 +10,8 @@ import { State } from "../constants";
 export type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
 export class Reaction implements ReactionImpl {
-    private _subscriptions = [];
-    private _destructor = null;
+    private _subscriptions: Subscription[] = [];
+    private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
 
     private _runnerFn = () => {
@@ -80,7 +80,7 @@ export class Reaction implements ReactionImpl {
 
 export function reaction(fn: ReactionFn, manager?: () => void): Disposer {
     const r = new Reaction(fn, manager);
-    const destructor = r._destroy.bind(r);
+    const destructor = r._destroy.bind(r) as Disposer;
     destructor.run = r._run.bind(r);
 
     r._run();

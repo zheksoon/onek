@@ -11,8 +11,8 @@ export type Observer = Reaction | undefined;
 
 const isInBrowser = typeof window !== "undefined";
 
-const EMPTY_ARRAY = [];
-const EMPTY_OBJECT = {};
+const EMPTY_ARRAY = [] as const;
+const EMPTY_OBJECT = {} as const;
 const NOOP = () => {};
 
 export function useObserver(): Observer {

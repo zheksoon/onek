@@ -1,6 +1,5 @@
 dist/
 types/
-!compat/types
 
 .pnp.*
 .yarn/*

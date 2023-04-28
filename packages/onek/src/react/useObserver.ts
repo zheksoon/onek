@@ -12,7 +12,7 @@ export type Observer = Reaction | undefined;
 
 const isInBrowser = typeof window !== "undefined";
 
-const EMPTY_ARRAY = [];
+const EMPTY_ARRAY = [] as const;
 const NOOP = () => {};
 
 export function useObserver(): Observer {

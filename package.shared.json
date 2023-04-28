@@ -1,5 +1,5 @@
 {
-  "version": "0.0.9",
+  "version": "0.0.11",
   "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "repository": {
     "type": "git",

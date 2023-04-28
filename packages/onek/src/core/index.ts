@@ -11,3 +11,4 @@ export type {
     Disposer,
 } from "./types";
 export { Options } from "./types";
+export { shallowEquals } from "./utils/shallowEquals";

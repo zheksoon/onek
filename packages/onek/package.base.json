@@ -1,5 +1,18 @@
 {
   "name": "onek",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "browser": "./dist/onek.module.js",
+      "umd": "./dist/onek.umd.js",
+      "import": "./dist/onek.mjs",
+      "require": "./dist/onek.js"
+    },
+    "./src": "./src/index.ts",
+    "./src/core": "./src/core/index.ts",
+    "./src/core/classes": "./src/core/classes/index.ts",
+    "./src/react/abandonedRendererCleanup": "./src/react/abandonedRendererCleanup.ts"
+  },
   "peerDependencies": {
     "react": ">=18.0.0"
   },
