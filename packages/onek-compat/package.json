@@ -1,5 +1,5 @@
 {
-  "version": "0.0.9",
+  "version": "0.0.12",
   "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
   },
   "packageManager": "yarn@3.5.0",
   "scripts": {
-    "publish": "yarn run build && yarn publish",
+    "publish": "yarn run build && npm publish",
     "build": "yarn exec microbundle",
     "build-full": "yarn exec microbundle --no-compress",
     "test": "yarn exec jest"

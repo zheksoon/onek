@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "publish": "yarn run sync && yarn workspaces foreach run -p publish",
+    "publish": "yarn run sync && yarn workspaces foreach run publish",
     "build": "yarn run sync && yarn workspaces foreach -p run build",
     "build-full": "yarn run sync && yarn workspaces foreach -p run buld-full",
     "sync": "node ./package-shared-sync.js"

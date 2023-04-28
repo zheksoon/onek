@@ -1,5 +1,6 @@
 dist/
 types/
+packages/*/README.md
 
 .pnp.*
 .yarn/*
