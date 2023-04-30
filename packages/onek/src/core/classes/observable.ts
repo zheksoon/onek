@@ -1,4 +1,4 @@
-import {
+import type {
     CheckFn,
     ObservableGetter,
     ObservableImpl,
@@ -7,12 +7,12 @@ import {
     Subscriber,
     UpdaterFn,
 } from "../types";
-import { txDepth, untracked } from "../transaction";
-import { subscriber } from "../subscriber";
-import { Computed } from "./computed";
-import { scheduleReactionRunner } from "../schedulers/reaction";
-import { shallowEquals } from "../utils/shallowEquals";
 import { State } from "../constants";
+import { Computed } from "./computed";
+import { subscriber } from "../subscriber";
+import { scheduleReactionRunner } from "../schedulers";
+import { txDepth, withUntracked } from "../transaction";
+import { shallowEquals } from "../utils";
 
 export class Observable<T = any> implements ObservableImpl<T> {
     private _revision: Revision = {};
@@ -25,7 +25,7 @@ export class Observable<T = any> implements ObservableImpl<T> {
         this._value = value;
         this._checkFn = checkFn
             ? typeof checkFn === "function"
-                ? untracked(checkFn)
+                ? withUntracked(checkFn)
                 : shallowEquals
             : undefined;
     }

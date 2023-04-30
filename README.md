@@ -647,6 +647,8 @@ export const TodoList = ({ model }) => {
 
 ## Recipes
 
+### Optimizing React re-renders with check flag
+
 ### Reaction scheduler
 
 Reaction scheduler is a function that's called on the end of the first transaction executed after previous scheduler run. It has one argument - `runner` function that should somehow be "scheduled" to run. Default implementation of the scheduler is microtask Promise-based scheduler:

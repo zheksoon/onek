@@ -1,10 +1,8 @@
-import type { Subscriber } from "./types";
+import type { MaybeSubscriber } from "./types";
 
-export let subscriber: Subscriber | null = null;
+export let subscriber: MaybeSubscriber = null;
 
-export function setSubscriber(
-    newSubscriber: Subscriber | null
-): Subscriber | null {
+export function setSubscriber(newSubscriber: MaybeSubscriber): MaybeSubscriber {
     const oldSubscriber = subscriber;
 
     subscriber = newSubscriber;

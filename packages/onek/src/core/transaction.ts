@@ -1,6 +1,6 @@
+import { MaybeSubscriber } from "./types";
 import { setSubscriber } from "./subscriber";
-import { scheduleReactionRunner } from "./schedulers/reaction";
-import { Subscriber } from "./types";
+import { scheduleReactionRunner } from "./schedulers";
 
 export let txDepth = 0;
 
@@ -13,7 +13,7 @@ export function tx(fn: () => void): void {
     }
 }
 
-export function utx<T>(fn: () => T, subscriber: Subscriber | null = null): T {
+export function utx<T>(fn: () => T, subscriber: MaybeSubscriber = null): T {
     const oldSubscriber = setSubscriber(subscriber);
     ++txDepth;
     try {
@@ -24,7 +24,7 @@ export function utx<T>(fn: () => T, subscriber: Subscriber | null = null): T {
     }
 }
 
-export function untracked<Args extends any[], T>(
+export function withUntracked<Args extends any[], T>(
     fn: (...args: Args) => T
 ): (...args: Args) => T {
     return function (this: any) {

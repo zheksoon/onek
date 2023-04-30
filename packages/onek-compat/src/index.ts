@@ -1,2 +1,2 @@
-export * from 'onek/src/core';
-export { useObserver, Observer } from "./react/useObserver";
+export * from "onek/src";
+export { useObserver, ObserverFn } from "./react";

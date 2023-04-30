@@ -7,7 +7,7 @@
   "scripts": {
     "publish": "yarn run sync && yarn workspaces foreach run publish",
     "build": "yarn run sync && yarn workspaces foreach -p run build",
-    "build:full": "yarn run sync && yarn workspaces foreach -p run buld:full",
+    "build:full": "yarn run sync && yarn workspaces foreach -p run build:full",
     "build:types": "yarn run sync && yarn workspaces foreach -ptv run build:types",
     "test": "yarn run sync && yarn workspaces foreach run test",
     "sync": "node package-sync.js"

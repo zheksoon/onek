@@ -1,22 +1,22 @@
-import { Destructor, Disposer, ReactionFn, ReactionImpl, Subscription } from "../types";
-import {
-    scheduleReaction,
-    scheduleStateActualization,
-} from "../schedulers/reaction";
-import { Computed } from "./computed";
-import { utx } from "../transaction";
+import type {
+    Destructor,
+    Disposer,
+    ReactionFn,
+    ReactionImpl,
+    Subscription,
+} from "../types";
 import { State } from "../constants";
+import { Computed } from "./computed";
+import { scheduleReaction, scheduleStateActualization } from "../schedulers";
+import { utx } from "../transaction";
 
-export type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
+type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
 export class Reaction implements ReactionImpl {
     private _subscriptions: Subscription[] = [];
     private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
 
-    private _runnerFn = () => {
-        this._destructor = this._fn();
-    };
     constructor(private _fn: ReactionFn, private _manager?: () => void) {}
 
     _addSubscription(subscription: Subscription): void {
@@ -76,6 +76,10 @@ export class Reaction implements ReactionImpl {
 
         utx(this._runnerFn, this);
     }
+
+    private _runnerFn = () => {
+        this._destructor = this._fn();
+    };
 }
 
 export function reaction(fn: ReactionFn, manager?: () => void): Disposer {

@@ -1,4 +1,4 @@
-import { Reaction } from "../core/classes";
+import { Reaction } from "../core";
 
 const CLEANUP_TIMEOUT = 5000;
 

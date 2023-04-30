@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction } from "../core/classes";
+import { Reaction, setSubscriber } from "../core";
+import type { SubscriberBase } from "../core/types";
 import {
     addAbandonedRenderCleanup,
     removeAbandonedRenderCleanup,
@@ -8,16 +9,21 @@ import {
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
-export type Observer = Reaction | undefined;
+export interface ObserverFn extends SubscriberBase {
+    <T>(callback: () => T): T;
+}
 
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [] as const;
 const NOOP = () => {};
 
-export function useObserver(): Observer {
+const NOOP_OBSERVER: ObserverFn = (callback) => callback();
+NOOP_OBSERVER._addSubscription = NOOP;
+
+export function useObserver(): ObserverFn {
     if (!isInBrowser) {
-        return;
+        return NOOP_OBSERVER;
     }
 
     const store = useMemo(() => {
@@ -31,6 +37,18 @@ export function useObserver(): Observer {
                 notify();
             });
         });
+
+        const observer: ObserverFn = (callback) => {
+            const oldSubscriber = setSubscriber(reaction);
+
+            try {
+                return callback();
+            } finally {
+                setSubscriber(oldSubscriber);
+            }
+        };
+
+        observer._addSubscription = reaction._addSubscription.bind(reaction);
 
         addAbandonedRenderCleanup(reaction);
 
@@ -60,14 +78,13 @@ export function useObserver(): Observer {
                 return revision;
             },
             _reaction: reaction,
+            _observer: observer,
         };
     }, EMPTY_ARRAY);
 
     useSyncExternalStore(store._subscribe, store._getRevision);
 
-    const reaction = store._reaction;
+    store._reaction._unsubscribeAndRemove();
 
-    reaction._unsubscribeAndRemove();
-
-    return reaction;
+    return store._observer;
 }

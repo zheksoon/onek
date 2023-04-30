@@ -1,13 +1,15 @@
-import { useMemo, useState, useEffect } from "react";
-import { Reaction } from "onek/src/core/classes";
+import { useEffect, useMemo, useState } from "react";
 import {
     addAbandonedRenderCleanup,
     removeAbandonedRenderCleanup,
-} from "onek/src/react/abandonedRendererCleanup";
+} from "onek/src/react";
+import { Reaction, setSubscriber, SubscriberBase } from "onek/src/core";
 
 type UnsubscribeFn = () => void;
 
-export type Observer = Reaction | undefined;
+export interface ObserverFn extends SubscriberBase {
+    <T>(callback: () => T): T;
+}
 
 const isInBrowser = typeof window !== "undefined";
 
@@ -15,9 +17,12 @@ const EMPTY_ARRAY = [] as const;
 const EMPTY_OBJECT = {} as const;
 const NOOP = () => {};
 
-export function useObserver(): Observer {
+const NOOP_OBSERVER: ObserverFn = (callback) => callback();
+NOOP_OBSERVER._addSubscription = NOOP;
+
+export function useObserver(): ObserverFn {
     if (!isInBrowser) {
-        return;
+        return NOOP_OBSERVER;
     }
 
     const [, triggerUpdate] = useState(EMPTY_OBJECT);
@@ -28,6 +33,18 @@ export function useObserver(): Observer {
         const reaction = new Reaction(NOOP, () => {
             triggerUpdate({});
         });
+
+        const observer: ObserverFn = (callback) => {
+            const oldSubscriber = setSubscriber(reaction);
+
+            try {
+                return callback();
+            } finally {
+                setSubscriber(oldSubscriber);
+            }
+        };
+
+        observer._addSubscription = reaction._addSubscription.bind(reaction);
 
         addAbandonedRenderCleanup(reaction);
 
@@ -46,14 +63,13 @@ export function useObserver(): Observer {
                 };
             },
             _reaction: reaction,
+            _observer: observer,
         };
     }, EMPTY_ARRAY);
 
     useEffect(store._subscriptionEffect, EMPTY_ARRAY);
 
-    const reaction = store._reaction;
+    store._reaction._unsubscribeAndRemove();
 
-    reaction._unsubscribeAndRemove();
-
-    return reaction;
+    return store._observer;
 }

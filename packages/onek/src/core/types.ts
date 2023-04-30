@@ -4,6 +4,12 @@ export type Subscriber = ComputedImpl | ReactionImpl;
 export type Subscription = ObservableImpl | ComputedImpl;
 export type Revision = {};
 
+export interface SubscriberBase {
+    _addSubscription(subscription: Subscription): void;
+}
+
+export type MaybeSubscriber = SubscriberBase | null;
+
 export declare class ObservableImpl<T = any> {
     constructor(value: T, checkFn?: boolean | CheckFn<T>);
 
@@ -18,7 +24,7 @@ export declare class ObservableImpl<T = any> {
     _setValue(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
-export declare class ComputedImpl<T = any> {
+export declare class ComputedImpl<T = any> implements SubscriberBase {
     constructor(fn: () => T, checkFn?: boolean | CheckFn<T>);
 
     _addSubscription(subscription: Subscription): void;
@@ -44,7 +50,7 @@ export type Destructor = (() => void) | null | undefined | void;
 export type ReactionFn = () => Destructor;
 export type Disposer = (() => void) & { run: () => void };
 
-export declare class ReactionImpl {
+export declare class ReactionImpl implements SubscriberBase {
     constructor(fn: ReactionFn, manager?: () => void);
 
     _addSubscription(subscription: Subscription): void;
