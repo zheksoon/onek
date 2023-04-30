@@ -1,0 +1,13 @@
+{
+  "name": "onek-compat",
+  "scripts": {
+    "test": "echo 'No tests for onek-compat yet'"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies":{
+    "onek": "workspace:*",
+    "@types/react": ">=16.8.0"
+  }
+}

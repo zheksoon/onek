@@ -1,6 +1,7 @@
 dist/
 types/
-!compat/types
+packages/*/README.md
+packages/*/package.json
 
 .pnp.*
 .yarn/*

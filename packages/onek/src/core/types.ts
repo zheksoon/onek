@@ -27,7 +27,7 @@ export declare class ComputedImpl<T = any> {
 
     _removeSubscriber(subscriber: Subscriber): void;
 
-    _checkSubscribers(): void;
+    _checkSubscribersAndPassivate(): void;
 
     _notify(state: State, subscription: Subscription): void;
 

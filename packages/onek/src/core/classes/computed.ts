@@ -59,13 +59,16 @@ export class Computed<T = any> implements ComputedImpl<T> {
 
     _removeSubscriber(subscriber: Subscriber): void {
         this._subscribers.delete(subscriber);
+        this._checkSubscribers();
+    }
 
-        if (!this._subscribers.size) {
+    _checkSubscribers(): void {
+        if (!this._subscribers.size && this._state !== State.PASSIVE) {
             scheduleSubscribersCheck(this);
         }
     }
 
-    _checkSubscribers(): void {
+    _checkSubscribersAndPassivate(): void {
         if (!this._subscribers.size && this._state !== State.PASSIVE) {
             this._passivate();
         }
@@ -174,8 +177,8 @@ export class Computed<T = any> implements ComputedImpl<T> {
             }
 
             _subscriber._addSubscription(this);
-        } else if (!this._subscribers.size) {
-            scheduleSubscribersCheck(this);
+        } else {
+            this._checkSubscribers();
         }
 
         return this._value!;
@@ -215,7 +218,7 @@ export function computed<T>(
     checkFn?: boolean | CheckFn<T>
 ): ComputedGetter<T> {
     const comp = new Computed(fn, checkFn);
-    const get = comp._getValue.bind(comp);
+    const get = comp._getValue.bind(comp) as ComputedGetter<T>;
 
     get.$$computed = comp;
     get.destroy = comp._destroy.bind(comp);

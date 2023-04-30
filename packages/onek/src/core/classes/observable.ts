@@ -76,7 +76,7 @@ export class Observable<T = any> implements ObservableImpl<T> {
     }
 }
 
-export function observable<T>(value?: T, checkFn?: boolean | CheckFn<T>) {
+export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     const obs = new Observable(value, checkFn);
     const get = obs._getValue.bind(obs) as ObservableGetter<T>;
     const set = obs._setValue.bind(obs) as Setter<T>;

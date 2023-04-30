@@ -27,10 +27,10 @@ export function utx<T>(fn: () => T, subscriber: Subscriber | null = null): T {
 export function untracked<Args extends any[], T>(
     fn: (...args: Args) => T
 ): (...args: Args) => T {
-    return function () {
+    return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         try {
-            return fn.apply(this, arguments);
+            return fn.apply(this, arguments as any);
         } finally {
             setSubscriber(oldSubscriber);
         }
@@ -40,11 +40,11 @@ export function untracked<Args extends any[], T>(
 export function action<Args extends any[], T>(
     fn: (...args: Args) => T
 ): (...args: Args) => T {
-    return function () {
+    return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         ++txDepth;
         try {
-            return fn.apply(this, arguments);
+            return fn.apply(this, arguments as any);
         } finally {
             setSubscriber(oldSubscriber);
             if (!--txDepth) scheduleReactionRunner();

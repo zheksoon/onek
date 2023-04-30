@@ -1,18 +1,18 @@
-import { useMemo, useSyncExternalStore } from "react";
-import { Reaction } from "../core/classes";
+import { useMemo, useState, useEffect } from "react";
+import { Reaction } from "onek/src/core/classes";
 import {
     addAbandonedRenderCleanup,
     removeAbandonedRenderCleanup,
-} from "./abandonedRendererCleanup";
+} from "onek/src/react/abandonedRendererCleanup";
 
-type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
 export type Observer = Reaction | undefined;
 
 const isInBrowser = typeof window !== "undefined";
 
-const EMPTY_ARRAY = [];
+const EMPTY_ARRAY = [] as const;
+const EMPTY_OBJECT = {} as const;
 const NOOP = () => {};
 
 export function useObserver(): Observer {
@@ -20,50 +20,36 @@ export function useObserver(): Observer {
         return;
     }
 
+    const [, triggerUpdate] = useState(EMPTY_OBJECT);
+
     const store = useMemo(() => {
-        let revision = {};
-        let subscribers = new Set<NotifyFn>();
         let didUnsubscribe = false;
 
         const reaction = new Reaction(NOOP, () => {
-            revision = {};
-            subscribers.forEach((notify) => {
-                notify();
-            });
+            triggerUpdate({});
         });
 
         addAbandonedRenderCleanup(reaction);
 
         return {
-            _subscribe(notify: NotifyFn): UnsubscribeFn {
+            _subscriptionEffect(): UnsubscribeFn {
                 removeAbandonedRenderCleanup(reaction);
 
-                if (didUnsubscribe && !subscribers.size) {
+                if (didUnsubscribe) {
                     reaction._subscribe();
-
                     didUnsubscribe = false;
                 }
 
-                subscribers.add(notify);
-
                 return () => {
-                    subscribers.delete(notify);
-
-                    if (!subscribers.size) {
-                        didUnsubscribe = true;
-
-                        reaction._unsubscribe();
-                    }
+                    reaction._unsubscribe();
+                    didUnsubscribe = true;
                 };
-            },
-            _getRevision() {
-                return revision;
             },
             _reaction: reaction,
         };
     }, EMPTY_ARRAY);
 
-    useSyncExternalStore(store._subscribe, store._getRevision);
+    useEffect(store._subscriptionEffect, EMPTY_ARRAY);
 
     const reaction = store._reaction;
 

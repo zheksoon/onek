@@ -1,0 +1,15 @@
+{
+  "name": "onek",
+  "exports": {
+    "./src": "./src/index.ts",
+    "./src/core": "./src/core/index.ts",
+    "./src/core/classes": "./src/core/classes/index.ts",
+    "./src/react/abandonedRendererCleanup": "./src/react/abandonedRendererCleanup.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": ">=18.0.0"
+  }
+}
