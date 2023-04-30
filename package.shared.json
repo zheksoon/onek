@@ -23,8 +23,9 @@
   "packageManager": "yarn@3.5.0",
   "scripts": {
     "publish": "yarn run build && npm publish",
-    "build": "yarn exec microbundle",
-    "build-full": "yarn exec microbundle --no-compress",
+    "build": "yarn exec microbundle --generateTypes=false",
+    "build:full": "yarn exec microbundle --generateTypes=false --no-compress",
+    "build:types": "yarn exec tsc -p ./types.tsconfig.json",
     "test": "yarn exec jest"
   },
   "files": [
