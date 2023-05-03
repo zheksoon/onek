@@ -1,5 +1,8 @@
 {
   "name": "onek-compat",
+  "repository": {
+    "directory": "packages/onek-compat"
+  },
   "scripts": {
     "test": "echo 'No tests for onek-compat yet'"
   },

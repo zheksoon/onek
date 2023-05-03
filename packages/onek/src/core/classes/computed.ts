@@ -1,7 +1,8 @@
 import type {
     CheckFn,
-    ComputedGetter,
-    ComputedImpl,
+    IComputed,
+    IComputedGetter,
+    IComputedImpl,
     Revision,
     Subscriber,
     Subscription,
@@ -10,7 +11,7 @@ import { State } from "../constants";
 import { setSubscriber, subscriber } from "../subscriber";
 import { scheduleSubscribersCheck } from "../schedulers";
 import { withUntracked } from "../transaction";
-import { shallowEquals } from "../utils";
+import { shallowEquals } from "../utils/shallowEquals";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -20,7 +21,7 @@ type ComputedState =
     | State.COMPUTING
     | State.PASSIVE;
 
-export class Computed<T = any> implements ComputedImpl<T> {
+export class Computed<T = any> implements IComputedImpl<T> {
     private _value: T | undefined = undefined;
     private _revision: Revision = {};
     private readonly _subscribers: Set<Subscriber> = new Set();
@@ -45,7 +46,7 @@ export class Computed<T = any> implements ComputedImpl<T> {
     _addSubscription(subscription: Subscription): void {
         if (!this._shouldSubscribe || subscription._addSubscriber(this)) {
             this._subscriptions.push(subscription);
-            this._subscriptionRevisions.push(subscription._getRevision());
+            this._subscriptionRevisions.push(subscription.revision());
         }
     }
 
@@ -97,7 +98,7 @@ export class Computed<T = any> implements ComputedImpl<T> {
     _actualizeAndRecompute(): void {
         if (this._state === State.PASSIVE) {
             const revisionsChanged = this._subscriptions.some((subs, idx) => {
-                return subs._getRevision() !== this._subscriptionRevisions[idx];
+                return subs.revision() !== this._subscriptionRevisions[idx];
             });
 
             if (!revisionsChanged) {
@@ -141,7 +142,7 @@ export class Computed<T = any> implements ComputedImpl<T> {
                 this._value = newValue;
                 this._revision = {};
             } catch (e) {
-                this._destroy();
+                this.destroy();
                 throw e;
             } finally {
                 setSubscriber(oldSubscriber);
@@ -149,7 +150,13 @@ export class Computed<T = any> implements ComputedImpl<T> {
         }
     }
 
-    _destroy(): void {
+    revision(): Revision {
+        this._actualizeAndRecompute();
+
+        return this._revision;
+    }
+
+    destroy(): void {
         this._unsubscribe();
         this._subscriptions = [];
         this._subscriptionRevisions = [];
@@ -158,13 +165,7 @@ export class Computed<T = any> implements ComputedImpl<T> {
         this._value = undefined;
     }
 
-    _getRevision(): Revision {
-        this._actualizeAndRecompute();
-
-        return this._revision;
-    }
-
-    _getValue(_subscriber = subscriber): T {
+    get(_subscriber = subscriber): T {
         if (this._state === State.COMPUTING) {
             throw new Error("Recursive computed call");
         }
@@ -216,12 +217,23 @@ export class Computed<T = any> implements ComputedImpl<T> {
 export function computed<T>(
     fn: () => T,
     checkFn?: boolean | CheckFn<T>
-): ComputedGetter<T> {
+): IComputedGetter<T> {
     const comp = new Computed(fn, checkFn);
-    const get = comp._getValue.bind(comp) as ComputedGetter<T>;
+    const get = comp.get.bind(comp) as IComputedGetter<T>;
 
-    get.$$computed = comp;
-    get.destroy = comp._destroy.bind(comp);
+    get.instance = comp;
+    get.destroy = comp.destroy.bind(comp);
 
     return get;
 }
+
+computed.instance = <T>(
+    fn: () => T,
+    checkFn?: boolean | CheckFn<T>
+): IComputed<T> => {
+    return new Computed(fn, checkFn);
+};
+
+computed.prop = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): T => {
+    return new Computed(fn, checkFn) as unknown as T;
+};

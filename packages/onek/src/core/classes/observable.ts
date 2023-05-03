@@ -1,9 +1,10 @@
 import type {
     CheckFn,
-    ObservableGetter,
-    ObservableImpl,
+    IObservable,
+    IObservableGetter,
+    IObservableImpl,
+    ISetter,
     Revision,
-    Setter,
     Subscriber,
     UpdaterFn,
 } from "../types";
@@ -12,9 +13,9 @@ import { Computed } from "./computed";
 import { subscriber } from "../subscriber";
 import { scheduleReactionRunner } from "../schedulers";
 import { txDepth, withUntracked } from "../transaction";
-import { shallowEquals } from "../utils";
+import { shallowEquals } from "../utils/shallowEquals";
 
-export class Observable<T = any> implements ObservableImpl<T> {
+export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: Revision = {};
     private _subscribers: Set<Subscriber> = new Set();
 
@@ -42,18 +43,18 @@ export class Observable<T = any> implements ObservableImpl<T> {
         this._subscribers.delete(subscriber);
     }
 
-    _getRevision(): Revision {
+    revision(): Revision {
         return this._revision;
     }
 
-    _getValue(_subscriber = subscriber): T {
+    get(_subscriber = subscriber): T {
         if (_subscriber) {
             _subscriber._addSubscription(this);
         }
         return this._value;
     }
 
-    _setValue(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
+    set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
         if (subscriber && subscriber instanceof Computed) {
             throw new Error("Changing observable inside of computed");
         }
@@ -67,10 +68,10 @@ export class Observable<T = any> implements ObservableImpl<T> {
             this._value = newValue as T;
             this._revision = {};
         }
-        this._notifyChanged();
+        this.notify();
     }
 
-    private _notifyChanged(): void {
+    notify(): void {
         this._subscribers.forEach((subs) => subs._notify(State.DIRTY, this));
         !txDepth && scheduleReactionRunner();
     }
@@ -78,10 +79,21 @@ export class Observable<T = any> implements ObservableImpl<T> {
 
 export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     const obs = new Observable(value, checkFn);
-    const get = obs._getValue.bind(obs) as ObservableGetter<T>;
-    const set = obs._setValue.bind(obs) as Setter<T>;
+    const get = obs.get.bind(obs) as IObservableGetter<T>;
+    const set = obs.set.bind(obs) as ISetter<T>;
 
-    get.$$observable = obs;
+    get.instance = obs;
 
     return [get, set] as const;
 }
+
+observable.instance = <T>(
+    value: T,
+    checkFn?: boolean | CheckFn<T>
+): IObservable<T> => {
+    return new Observable(value, checkFn);
+};
+
+observable.prop = <T>(value: T, checkFn?: boolean | CheckFn<T>): T => {
+    return new Observable(value, checkFn) as unknown as T;
+};

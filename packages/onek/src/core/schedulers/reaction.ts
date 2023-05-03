@@ -1,4 +1,4 @@
-import type { Options } from "../types";
+import type { IOptions } from "../types";
 import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck, subscribersCheckQueue } from "./subscribersCheck";
@@ -17,7 +17,7 @@ let reactionExceptionHandler = (exception: any) => {
     console.error("Reaction exception:", exception);
 };
 
-export function configure(options: Options) {
+export function configure(options: IOptions) {
     if (options.reactionScheduler !== undefined) {
         reactionScheduler = options.reactionScheduler;
     }

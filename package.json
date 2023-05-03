@@ -1,16 +1,17 @@
 {
-  "name": "onek-workspace",
+  "name": "onek-packages",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "publish": "yarn run sync && yarn workspaces foreach run publish",
-    "build": "yarn run sync && yarn workspaces foreach -p run build",
-    "build:full": "yarn run sync && yarn workspaces foreach -p run build:full",
+    "publish:all": "yarn run sync && yarn workspaces foreach run publish",
+    "prepublish": "node packages/sync-readme.js",
+    "build": "yarn run sync && yarn workspaces foreach -ptv run build",
+    "build:full": "yarn run sync && yarn workspaces foreach -ptv run build:full",
     "build:types": "yarn run sync && yarn workspaces foreach -ptv run build:types",
     "test": "yarn run sync && yarn workspaces foreach run test",
-    "sync": "node package-sync.js"
+    "sync": "node packages/sync-package-json.js"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
@@ -20,7 +21,6 @@
     "lodash": "^4.17.21",
     "microbundle": "^0.15.1",
     "prettier": "^2.8.7",
-    "react": ">=18.0.0",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.0"

@@ -5,6 +5,9 @@
     "./src/core": "./src/core/index.ts",
     "./src/react": "./src/react/index.ts"
   },
+  "repository": {
+    "directory": "packages/onek"
+  },
   "peerDependencies": {
     "react": ">=18.0.0"
   },

@@ -2,7 +2,7 @@ import type {
     Destructor,
     Disposer,
     ReactionFn,
-    ReactionImpl,
+    IReactionImpl,
     Subscription,
 } from "../types";
 import { State } from "../constants";
@@ -12,7 +12,7 @@ import { utx } from "../transaction";
 
 type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
-export class Reaction implements ReactionImpl {
+export class Reaction implements IReactionImpl {
     private _subscriptions: Subscription[] = [];
     private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
@@ -62,16 +62,16 @@ export class Reaction implements ReactionImpl {
         if (this._manager) {
             this._manager();
         } else {
-            this._run();
+            this.run();
         }
     }
 
-    _destroy(): void {
+    destroy(): void {
         this._unsubscribeAndRemove();
         this._state = State.DESTROYED;
     }
 
-    _run(): void {
+    run(): void {
         this._unsubscribeAndRemove();
 
         utx(this._runnerFn, this);
@@ -84,10 +84,10 @@ export class Reaction implements ReactionImpl {
 
 export function reaction(fn: ReactionFn, manager?: () => void): Disposer {
     const r = new Reaction(fn, manager);
-    const destructor = r._destroy.bind(r) as Disposer;
-    destructor.run = r._run.bind(r);
+    const destructor = r.destroy.bind(r) as Disposer;
+    destructor.run = r.run.bind(r);
 
-    r._run();
+    r.run();
 
     return destructor;
 }

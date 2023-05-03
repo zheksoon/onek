@@ -1,7 +1,7 @@
 import { State } from "./constants";
 
-export type Subscriber = ComputedImpl | ReactionImpl;
-export type Subscription = ObservableImpl | ComputedImpl;
+export type Subscriber = IComputedImpl | IReactionImpl;
+export type Subscription = IObservableImpl | IComputedImpl;
 export type Revision = {};
 
 export interface SubscriberBase {
@@ -10,25 +10,26 @@ export interface SubscriberBase {
 
 export type MaybeSubscriber = SubscriberBase | null;
 
-export declare class ObservableImpl<T = any> {
-    constructor(value: T, checkFn?: boolean | CheckFn<T>);
+export interface IGettable<T> {
+    get(_subscriber?: Subscriber): T;
 
+    revision(): Revision;
+}
+
+export interface IObservable<T> extends IGettable<T> {
+    set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
+}
+export interface IObservableImpl<T = any> extends IObservable<T> {
     _addSubscriber(subscriber: Subscriber): boolean;
 
     _removeSubscriber(subscriber: Subscriber): void;
-
-    _getRevision(): Revision;
-
-    _getValue(_subscriber?: Subscriber): T;
-
-    _setValue(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
-export declare class ComputedImpl<T = any> implements SubscriberBase {
-    constructor(fn: () => T, checkFn?: boolean | CheckFn<T>);
+export interface IComputed<T> extends IGettable<T> {
+    destroy(): void;
+}
 
-    _addSubscription(subscription: Subscription): void;
-
+export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
     _addSubscriber(subscriber: Subscriber): boolean;
 
     _removeSubscriber(subscriber: Subscriber): void;
@@ -38,23 +39,21 @@ export declare class ComputedImpl<T = any> implements SubscriberBase {
     _notify(state: State, subscription: Subscription): void;
 
     _actualizeAndRecompute(): void;
-
-    _destroy(): void;
-
-    _getRevision(): Revision;
-
-    _getValue(_subscriber?: Subscriber): T;
 }
 
 export type Destructor = (() => void) | null | undefined | void;
 export type ReactionFn = () => Destructor;
 export type Disposer = (() => void) & { run: () => void };
 
-export declare class ReactionImpl implements SubscriberBase {
-    constructor(fn: ReactionFn, manager?: () => void);
+export interface IReaction {
+    new (fn: ReactionFn, manager?: () => void): IReaction;
 
-    _addSubscription(subscription: Subscription): void;
+    destroy(): void;
 
+    run(): void;
+}
+
+export interface IReactionImpl extends SubscriberBase {
     _notify(state: State, subscription: Subscription): void;
 
     _subscribe(): void;
@@ -62,34 +61,30 @@ export declare class ReactionImpl implements SubscriberBase {
     _unsubscribe(): void;
 
     _runManager(): void;
-
-    _destroy(): void;
-
-    _run(): void;
 }
 
 export type CheckFn<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;
 
-export interface Getter<T> {
+export interface IGetter<T> {
     (subscriber?: Subscriber): T;
 }
 
-export interface Setter<T> {
+export interface ISetter<T> {
     (value?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
 
-export interface ObservableGetter<T> extends Getter<T> {
-    $$observable: ObservableImpl<T>;
+export interface IObservableGetter<T> extends IGetter<T> {
+    instance: IObservable<T>;
 }
 
-export interface ComputedGetter<T> extends Getter<T> {
-    $$computed: ComputedImpl<T>;
+export interface IComputedGetter<T> extends IGetter<T> {
+    instance: IComputed<T>;
 
     destroy(): void;
 }
 
-export type Options = {
+export type IOptions = {
     reactionScheduler?: (runner: () => void) => void;
     reactionExceptionHandler?: (exception: Error) => void;
 };

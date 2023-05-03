@@ -7,7 +7,7 @@ import { Reaction, setSubscriber, SubscriberBase } from "onek/src/core";
 
 type UnsubscribeFn = () => void;
 
-export interface ObserverFn extends SubscriberBase {
+export interface IObserver extends SubscriberBase {
     <T>(callback: () => T): T;
 }
 
@@ -17,10 +17,10 @@ const EMPTY_ARRAY = [] as const;
 const EMPTY_OBJECT = {} as const;
 const NOOP = () => {};
 
-const NOOP_OBSERVER: ObserverFn = (callback) => callback();
+const NOOP_OBSERVER: IObserver = (callback) => callback();
 NOOP_OBSERVER._addSubscription = NOOP;
 
-export function useObserver(): ObserverFn {
+export function useObserver(): IObserver {
     if (!isInBrowser) {
         return NOOP_OBSERVER;
     }
@@ -28,13 +28,19 @@ export function useObserver(): ObserverFn {
     const [, triggerUpdate] = useState(EMPTY_OBJECT);
 
     const store = useMemo(() => {
+        let didSubscribe = false;
         let didUnsubscribe = false;
+        let shouldRerender = false;
 
         const reaction = new Reaction(NOOP, () => {
-            triggerUpdate({});
+            if (didSubscribe) {
+                triggerUpdate({});
+            } else {
+                shouldRerender = true;
+            }
         });
 
-        const observer: ObserverFn = (callback) => {
+        const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
 
             try {
@@ -51,6 +57,13 @@ export function useObserver(): ObserverFn {
         return {
             _subscriptionEffect(): UnsubscribeFn {
                 removeAbandonedRenderCleanup(reaction);
+
+                if (shouldRerender) {
+                    shouldRerender = false;
+                    triggerUpdate({});
+                }
+
+                didSubscribe = true;
 
                 if (didUnsubscribe) {
                     reaction._subscribe();
