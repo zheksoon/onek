@@ -3,11 +3,12 @@ import type {
     IObservable,
     IObservableGetter,
     IObservableImpl,
+    IRevision,
     ISetter,
-    Revision,
     Subscriber,
     UpdaterFn,
 } from "../types";
+import { Revision } from "./revision";
 import { State } from "../constants";
 import { Computed } from "./computed";
 import { subscriber } from "../subscriber";
@@ -16,7 +17,7 @@ import { txDepth, withUntracked } from "../transaction";
 import { shallowEquals } from "../utils/shallowEquals";
 
 export class Observable<T = any> implements IObservableImpl<T> {
-    private _revision: Revision = {};
+    private _revision: IRevision = new Revision();
     private _subscribers: Set<Subscriber> = new Set();
 
     private declare _value: T;
@@ -31,19 +32,15 @@ export class Observable<T = any> implements IObservableImpl<T> {
             : undefined;
     }
 
-    _addSubscriber(subscriber: Subscriber): boolean {
-        if (!this._subscribers.has(subscriber)) {
-            this._subscribers.add(subscriber);
-            return true;
-        }
-        return false;
+    _addSubscriber(subscriber: Subscriber): void {
+        this._subscribers.add(subscriber);
     }
 
     _removeSubscriber(subscriber: Subscriber): void {
         this._subscribers.delete(subscriber);
     }
 
-    revision(): Revision {
+    revision(): IRevision {
         return this._revision;
     }
 
@@ -66,7 +63,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
                 return;
             }
             this._value = newValue as T;
-            this._revision = {};
+            this._revision = new Revision();
         }
         this.notify();
     }

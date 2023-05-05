@@ -894,7 +894,47 @@ describe("computed", () => {
         expect(updates(c)).toBe(2);
     });
 
-    describe("passive computed", () => {});
+    describe("passive computed", () => {
+        if (!global.gc) {
+            return;
+        }
+
+        it("Computed should be garbage collected", async () => {
+            const [o1, seto1] = observable(0);
+
+            let c1 = computed(() => o1() * 2);
+
+            const weakRef = new WeakRef(c1);
+
+            // Set up the FinalizationRegistry
+            const registry = new FinalizationRegistry((resolve) => {
+                // This callback will be called when the object is garbage-collected
+                resolve();
+            });
+
+            // Create a promise and register the object with the resolve function
+            const gcPromise = new Promise((resolve) => {
+                registry.register(c1, resolve);
+            });
+
+            c1();
+
+            // Release the strong reference to the object
+            c1 = null;
+
+            // Run garbage collection if it's available
+            for (let i = 0; i < 10; i++) {
+                global.gc();
+                await new Promise((r) => setTimeout(r, 50));
+            }
+
+            // Wait for the FinalizationRegistry callback to be called
+            await gcPromise;
+
+            // Check if the object was garbage-collected
+            expect(weakRef.deref()).toBeUndefined();
+        });
+    });
 });
 
 describe("reaction", () => {

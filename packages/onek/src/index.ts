@@ -25,8 +25,8 @@ export {
     action,
     configure,
     shallowEquals,
-    makeObservable,
-    from,
-    notify,
+    // makeObservable,
+    // from,
+    // notify,
 } from "./core";
 export { useObserver, ObserverFn } from "./react";

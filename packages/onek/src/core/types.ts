@@ -2,7 +2,8 @@ import { State } from "./constants";
 
 export type Subscriber = IComputedImpl | IReactionImpl;
 export type Subscription = IObservableImpl | IComputedImpl;
-export type Revision = {};
+
+export interface IRevision {}
 
 export interface SubscriberBase {
     _addSubscription(subscription: Subscription): void;
@@ -13,14 +14,15 @@ export type MaybeSubscriber = SubscriberBase | null;
 export interface IGettable<T> {
     get(_subscriber?: Subscriber): T;
 
-    revision(): Revision;
+    revision(): IRevision;
 }
 
 export interface IObservable<T> extends IGettable<T> {
     set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
 }
+
 export interface IObservableImpl<T = any> extends IObservable<T> {
-    _addSubscriber(subscriber: Subscriber): boolean;
+    _addSubscriber(subscriber: Subscriber): void;
 
     _removeSubscriber(subscriber: Subscriber): void;
 }
@@ -30,7 +32,7 @@ export interface IComputed<T> extends IGettable<T> {
 }
 
 export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
-    _addSubscriber(subscriber: Subscriber): boolean;
+    _addSubscriber(subscriber: Subscriber): void;
 
     _removeSubscriber(subscriber: Subscriber): void;
 

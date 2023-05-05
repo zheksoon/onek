@@ -1,16 +1,22 @@
 {
   "name": "onek-packages",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/ts-jest",
+      "**/ts-jest/**"
+    ]
+  },
   "scripts": {
     "publish:all": "yarn run sync && yarn workspaces foreach run publish",
     "prepublish": "node packages/sync-readme.js",
     "build": "yarn run sync && yarn workspaces foreach -ptv run build",
     "build:full": "yarn run sync && yarn workspaces foreach -ptv run build:full",
     "build:types": "yarn run sync && yarn workspaces foreach -ptv run build:types",
-    "test": "yarn run sync && yarn workspaces foreach run test",
+    "test": "yarn run sync && yarn workspaces foreach node --expose-gc $(yarn bin jest)",
     "sync": "node packages/sync-package-json.js"
   },
   "devDependencies": {

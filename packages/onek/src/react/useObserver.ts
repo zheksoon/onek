@@ -1,10 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { Reaction, setSubscriber } from "../core";
 import type { SubscriberBase } from "../core/types";
-import {
-    addAbandonedRenderCleanup,
-    removeAbandonedRenderCleanup,
-} from "./abandonedRendererCleanup";
 
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
@@ -29,7 +25,6 @@ export function useObserver(): ObserverFn {
     const store = useMemo(() => {
         let revision = {};
         let subscribers = new Set<NotifyFn>();
-        let didUnsubscribe = false;
 
         const reaction = new Reaction(NOOP, () => {
             revision = {};
@@ -37,6 +32,8 @@ export function useObserver(): ObserverFn {
                 notify();
             });
         });
+
+        reaction._shouldSubscribe = false;
 
         const observer: ObserverFn = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
@@ -50,26 +47,22 @@ export function useObserver(): ObserverFn {
 
         observer._addSubscription = reaction._addSubscription.bind(reaction);
 
-        addAbandonedRenderCleanup(reaction);
-
         return {
             _subscribe(notify: NotifyFn): UnsubscribeFn {
-                removeAbandonedRenderCleanup(reaction);
-
-                if (didUnsubscribe && !subscribers.size) {
-                    reaction._subscribe();
-
-                    didUnsubscribe = false;
-                }
-
                 subscribers.add(notify);
+
+                reaction._shouldSubscribe = true;
+
+                reaction._subscribe();
+
+                if (reaction._missedRun()) {
+                    notify();
+                }
 
                 return () => {
                     subscribers.delete(notify);
 
                     if (!subscribers.size) {
-                        didUnsubscribe = true;
-
                         reaction._unsubscribe();
                     }
                 };

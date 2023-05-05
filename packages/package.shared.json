@@ -18,6 +18,13 @@
       "umd": "./dist/onek.umd.js",
       "import": "./dist/onek.mjs",
       "require": "./dist/onek.js"
+    },
+    "./mobx": {
+      "types": "./types/mobx/index.d.ts",
+      "browser": "./dist/mobx/index.module.js",
+      "umd": "./dist/mobx/index.umd.js",
+      "import": "./dist/mobx/index.mjs",
+      "require": "./dist/mobx/index.js"
     }
   },
   "packageManager": "yarn@3.5.0",
@@ -26,7 +33,10 @@
     "build": "yarn exec microbundle --generateTypes=false",
     "build:full": "yarn exec microbundle --generateTypes=false --no-compress",
     "build:types": "yarn exec tsc -p ./types.tsconfig.json",
-    "test": "yarn exec jest"
+    "test": "node --expose-gc $(yarn bin jest)"
+  },
+  "devDependencies": {
+    "ts-jest": "^29.0.5"
   },
   "files": [
     "dist/",

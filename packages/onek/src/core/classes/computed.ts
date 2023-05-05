@@ -3,7 +3,7 @@ import type {
     IComputed,
     IComputedGetter,
     IComputedImpl,
-    Revision,
+    IRevision,
     Subscriber,
     Subscription,
 } from "../types";
@@ -12,6 +12,7 @@ import { setSubscriber, subscriber } from "../subscriber";
 import { scheduleSubscribersCheck } from "../schedulers";
 import { withUntracked } from "../transaction";
 import { shallowEquals } from "../utils/shallowEquals";
+import { Revision } from "./revision";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -23,10 +24,9 @@ type ComputedState =
 
 export class Computed<T = any> implements IComputedImpl<T> {
     private _value: T | undefined = undefined;
-    private _revision: Revision = {};
+    private _revision: IRevision = new Revision();
     private readonly _subscribers: Set<Subscriber> = new Set();
-    private _subscriptions: Subscription[] = [];
-    private _subscriptionRevisions: Revision[] = [];
+    private readonly _subscriptions: Map<Subscription, IRevision> = new Map();
     private _subscriptionsToActualize: Computed[] = [];
     private _state: ComputedState = State.NOT_INITIALIZED;
     private _shouldSubscribe = true;
@@ -44,18 +44,19 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     _addSubscription(subscription: Subscription): void {
-        if (!this._shouldSubscribe || subscription._addSubscriber(this)) {
-            this._subscriptions.push(subscription);
-            this._subscriptionRevisions.push(subscription.revision());
+        if (this._shouldSubscribe) {
+            subscription._addSubscriber(this);
         }
+
+        this._subscriptions.set(subscription, subscription.revision());
     }
 
-    _addSubscriber(subscriber: Subscriber): boolean {
-        if (!this._subscribers.has(subscriber)) {
-            this._subscribers.add(subscriber);
-            return true;
+    _addSubscriber(subscriber: Subscriber): void {
+        this._subscribers.add(subscriber);
+
+        if (this._state === State.PASSIVE) {
+            this._resurrect();
         }
-        return false;
     }
 
     _removeSubscriber(subscriber: Subscriber): void {
@@ -95,10 +96,12 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
     }
 
-    _actualizeAndRecompute(): void {
+    _actualizeAndRecompute(willHaveSubscriber = false): void {
         if (this._state === State.PASSIVE) {
-            const revisionsChanged = this._subscriptions.some((subs, idx) => {
-                return subs.revision() !== this._subscriptionRevisions[idx];
+            let revisionsChanged = false;
+
+            this._subscriptions.forEach((revision, subscription) => {
+                revisionsChanged ||= subscription.revision() !== revision;
             });
 
             if (!revisionsChanged) {
@@ -108,7 +111,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
         if (this._state === State.MAYBE_DIRTY) {
             this._subscriptionsToActualize.forEach((subs) => {
-                subs._actualizeAndRecompute();
+                subs._actualizeAndRecompute(willHaveSubscriber);
             });
             this._subscriptionsToActualize = [];
 
@@ -119,28 +122,33 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
         if (this._state !== State.CLEAN) {
             const oldState = this._state;
-            const wasPassive = oldState === State.PASSIVE;
-            const oldSubscriber = setSubscriber(this);
+            const wasInitialized = oldState !== State.NOT_INITIALIZED;
+            const wasNotPassive = oldState !== State.PASSIVE;
 
-            this._subscriptions = [];
-            this._subscriptionRevisions = [];
-            this._shouldSubscribe = !wasPassive;
+            this._shouldSubscribe =
+                willHaveSubscriber || (wasInitialized && wasNotPassive);
+
+            this._subscriptions.clear();
 
             this._state = State.COMPUTING;
+
+            const oldSubscriber = setSubscriber(this);
 
             try {
                 const newValue = this._fn();
 
-                this._state = wasPassive ? State.PASSIVE : State.CLEAN;
+                this._state = this._shouldSubscribe
+                    ? State.CLEAN
+                    : State.PASSIVE;
 
-                if (this._checkFn && oldState !== State.NOT_INITIALIZED) {
+                if (this._checkFn && wasInitialized) {
                     if (this._checkFn(this._value!, newValue)) {
                         return;
                     }
                     this._notifySubscribers(State.DIRTY);
                 }
                 this._value = newValue;
-                this._revision = {};
+                this._revision = new Revision();
             } catch (e) {
                 this.destroy();
                 throw e;
@@ -150,7 +158,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
     }
 
-    revision(): Revision {
+    revision(): IRevision {
         this._actualizeAndRecompute();
 
         return this._revision;
@@ -158,8 +166,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
     destroy(): void {
         this._unsubscribe();
-        this._subscriptions = [];
-        this._subscriptionRevisions = [];
+        this._subscriptions.clear();
         this._subscriptionsToActualize = [];
         this._state = State.NOT_INITIALIZED;
         this._value = undefined;
@@ -170,36 +177,32 @@ export class Computed<T = any> implements IComputedImpl<T> {
             throw new Error("Recursive computed call");
         }
 
-        this._actualizeAndRecompute();
+        const willHaveSubscriber = !!_subscriber;
 
-        if (_subscriber) {
-            if (this._state === State.PASSIVE) {
-                this._resurrect();
-            }
+        this._actualizeAndRecompute(willHaveSubscriber);
 
+        if (willHaveSubscriber) {
             _subscriber._addSubscription(this);
-        } else {
-            this._checkSubscribers();
         }
 
         return this._value!;
     }
 
     private _subscribe(): void {
-        this._subscriptions.forEach((subs) => {
-            subs._addSubscriber(this);
+        this._subscriptions.forEach((revision, subscription) => {
+            subscription._addSubscriber(this);
         });
     }
 
     private _unsubscribe(): void {
-        this._subscriptions.forEach((subs) => {
-            subs._removeSubscriber(this);
+        this._subscriptions.forEach((revision, subscription) => {
+            subscription._removeSubscriber(this);
         });
     }
 
     private _notifySubscribers(state: State): void {
-        this._subscribers.forEach((subs) => {
-            subs._notify(state, this);
+        this._subscribers.forEach((subscriber) => {
+            subscriber._notify(state, this);
         });
     }
 
