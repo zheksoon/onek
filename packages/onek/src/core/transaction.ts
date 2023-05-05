@@ -1,4 +1,4 @@
-import { MaybeSubscriber } from "./types";
+import { IdentityFn, MaybeSubscriber } from "./types";
 import { setSubscriber } from "./subscriber";
 import { scheduleReactionRunner } from "./schedulers";
 
@@ -24,9 +24,7 @@ export function utx<T>(fn: () => T, subscriber: MaybeSubscriber = null): T {
     }
 }
 
-export function withUntracked<Args extends any[], T>(
-    fn: (...args: Args) => T
-): (...args: Args) => T {
+export function withUntracked<T extends Function>(fn: T): IdentityFn<T> {
     return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         try {
@@ -34,12 +32,10 @@ export function withUntracked<Args extends any[], T>(
         } finally {
             setSubscriber(oldSubscriber);
         }
-    };
+    } as IdentityFn<T>;
 }
 
-export function action<Args extends any[], T>(
-    fn: (...args: Args) => T
-): (...args: Args) => T {
+export function action<T extends Function>(fn: T): IdentityFn<T> {
     return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         ++txDepth;
@@ -49,5 +45,5 @@ export function action<Args extends any[], T>(
             setSubscriber(oldSubscriber);
             if (!--txDepth) scheduleReactionRunner();
         }
-    };
+    } as IdentityFn<T>;
 }

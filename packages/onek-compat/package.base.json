@@ -4,7 +4,7 @@
     "directory": "packages/onek-compat"
   },
   "scripts": {
-    "test": "echo 'No tests for onek-compat yet'"
+    "test": "echo 'No tests for onek-compat yet'; exit;"
   },
   "peerDependencies": {
     "react": ">=16.8.0"

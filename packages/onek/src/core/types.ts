@@ -1,5 +1,9 @@
 import { State } from "./constants";
 
+export type IdentityFn<T> = T extends (...args: infer Args) => infer R
+    ? (...args: Args) => R
+    : never;
+
 export type Subscriber = IComputedImpl | IReactionImpl;
 export type Subscription = IObservableImpl | IComputedImpl;
 

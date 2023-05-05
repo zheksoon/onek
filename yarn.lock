@@ -5350,10 +5350,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "onek-compat@workspace:packages/onek-compat"
   dependencies:
+    "@types/jest": ^29.4.0
     "@types/react": ">=16.8.0"
+    jest: ^29.0.3
     onek: "workspace:*"
     react: ">=16.8.0"
     ts-jest: ^29.0.5
+    typescript: ^5.0.0
   peerDependencies:
     react: ">=16.8.0"
   languageName: unknown
@@ -5363,14 +5366,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "onek-packages@workspace:."
   dependencies:
-    "@types/jest": ^29.4.0
     "@types/node": latest
     fs-extra: ^11.1.1
     jest: ^29.0.3
     lodash: ^4.17.21
     microbundle: ^0.15.1
     prettier: ^2.8.7
-    ts-jest: ^29.0.5
     ts-node: ^10.9.1
     typescript: ^5.0.0
   languageName: unknown
@@ -5380,9 +5381,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "onek@workspace:packages/onek"
   dependencies:
+    "@types/jest": ^29.4.0
     "@types/react": ">=18.0.0"
+    jest: ^29.0.3
     react: ">=18.0.0"
     ts-jest: ^29.0.5
+    typescript: ^5.0.0
   peerDependencies:
     react: ">=18.0.0"
   languageName: unknown

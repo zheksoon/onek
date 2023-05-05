@@ -84,10 +84,7 @@ export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     return [get, set] as const;
 }
 
-observable.instance = <T>(
-    value: T,
-    checkFn?: boolean | CheckFn<T>
-): IObservable<T> => {
+observable.instance = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
     return new Observable(value, checkFn);
 };
 

@@ -125,8 +125,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
             const wasInitialized = oldState !== State.NOT_INITIALIZED;
             const wasNotPassive = oldState !== State.PASSIVE;
 
-            this._shouldSubscribe =
-                willHaveSubscriber || (wasInitialized && wasNotPassive);
+            this._shouldSubscribe = willHaveSubscriber || (wasInitialized && wasNotPassive);
 
             this._subscriptions.clear();
 
@@ -137,9 +136,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
             try {
                 const newValue = this._fn();
 
-                this._state = this._shouldSubscribe
-                    ? State.CLEAN
-                    : State.PASSIVE;
+                this._state = this._shouldSubscribe ? State.CLEAN : State.PASSIVE;
 
                 if (this._checkFn && wasInitialized) {
                     if (this._checkFn(this._value!, newValue)) {
@@ -217,10 +214,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 }
 
-export function computed<T>(
-    fn: () => T,
-    checkFn?: boolean | CheckFn<T>
-): IComputedGetter<T> {
+export function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputedGetter<T> {
     const comp = new Computed(fn, checkFn);
     const get = comp.get.bind(comp) as IComputedGetter<T>;
 
@@ -230,10 +224,7 @@ export function computed<T>(
     return get;
 }
 
-computed.instance = <T>(
-    fn: () => T,
-    checkFn?: boolean | CheckFn<T>
-): IComputed<T> => {
+computed.instance = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputed<T> => {
     return new Computed(fn, checkFn);
 };
 

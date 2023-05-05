@@ -2,10 +2,7 @@ import type { IOptions } from "../types";
 import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck, subscribersCheckQueue } from "./subscribersCheck";
-import {
-    runStateActualization,
-    stateActualizationQueue,
-} from "./stateActualization";
+import { runStateActualization, stateActualizationQueue } from "./stateActualization";
 
 let reactionQueue: Array<Reaction> = [];
 let isReactionRunScheduled = false;
@@ -61,9 +58,7 @@ function runReactions(): void {
 
 export function scheduleReactionRunner(): void {
     const shouldRunReactions =
-        reactionQueue.length ||
-        stateActualizationQueue.size ||
-        subscribersCheckQueue.size;
+        reactionQueue.length || stateActualizationQueue.size || subscribersCheckQueue.size;
 
     if (!isReactionRunScheduled && shouldRunReactions) {
         isReactionRunScheduled = true;
