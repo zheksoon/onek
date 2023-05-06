@@ -1,6 +1,6 @@
 {
     "name": "onek",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
     "repository": {
         "type": "git",
@@ -61,11 +61,11 @@
     "files": [
         "dist/",
         "types/",
-        "compat/dist",
-        "compat/types",
+        "compat/dist/",
+        "compat/types/",
         "compat/package.json",
-        "mobx/dist",
-        "mobx/types",
+        "mobx/dist/",
+        "mobx/types/",
         "mobx/package.json",
         "LICENSE",
         "README.md",

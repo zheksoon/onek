@@ -9,7 +9,7 @@
       "files": "**/*.md",
       "options": {
         "tabWidth": 2,
-        "printWidth": 80
+        "printWidth": 80,
       }
     }
   ]
