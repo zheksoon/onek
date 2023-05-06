@@ -8,13 +8,12 @@ import type {
     Subscriber,
     UpdaterFn,
 } from "../types";
-import { Revision } from "./revision";
 import { State } from "../constants";
 import { Computed } from "./computed";
+import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
-import { scheduleReactionRunner } from "../schedulers";
-import { txDepth, withUntracked } from "../transaction";
-import { shallowEquals } from "../utils/shallowEquals";
+import { endTx, withUntracked } from "../transaction";
+import { untrackedShallowEquals } from "../utils";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = new Revision();
@@ -28,7 +27,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
         this._checkFn = checkFn
             ? typeof checkFn === "function"
                 ? withUntracked(checkFn)
-                : shallowEquals
+                : untrackedShallowEquals
             : undefined;
     }
 
@@ -38,6 +37,10 @@ export class Observable<T = any> implements IObservableImpl<T> {
 
     _removeSubscriber(subscriber: Subscriber): void {
         this._subscribers.delete(subscriber);
+    }
+
+    _actualizeAndRecompute(): void {
+        // noop
     }
 
     revision(): IRevision {
@@ -55,22 +58,30 @@ export class Observable<T = any> implements IObservableImpl<T> {
         if (subscriber && subscriber instanceof Computed) {
             throw new Error("Changing observable inside of computed");
         }
+
         if (arguments.length > 0) {
             if (typeof newValue === "function" && !asIs) {
                 newValue = (newValue as UpdaterFn<T>)(this._value);
             }
+
             if (this._checkFn && this._checkFn(this._value, newValue as T)) {
                 return;
+
             }
+
             this._value = newValue as T;
             this._revision = new Revision();
         }
+
         this.notify();
     }
 
     notify(): void {
-        this._subscribers.forEach((subs) => subs._notify(State.DIRTY, this));
-        !txDepth && scheduleReactionRunner();
+        this._subscribers.forEach((subs) => {
+            subs._notify(State.DIRTY);
+        });
+
+        endTx();
     }
 }
 

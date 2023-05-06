@@ -24,6 +24,7 @@ export {
     Revision,
     tx,
     utx,
+    untracked,
     withUntracked,
     action,
     configure,

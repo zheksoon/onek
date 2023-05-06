@@ -1,3 +1,5 @@
+import { withUntracked } from "../transaction";
+
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isPlainObject(obj: any): obj is Object {
@@ -87,3 +89,5 @@ export function shallowEquals<T>(prev: T, next: T): boolean {
 
     return false;
 }
+
+export const untrackedShallowEquals = withUntracked(shallowEquals);

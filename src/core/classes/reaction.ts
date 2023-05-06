@@ -2,13 +2,13 @@ import type {
     Destructor,
     Disposer,
     IReactionImpl,
-    ReactionFn,
     IRevision,
+    NotifyState,
+    ReactionFn,
     Subscription,
 } from "../types";
 import { State } from "../constants";
-import { Computed } from "./computed";
-import { scheduleReaction, scheduleStateActualization } from "../schedulers";
+import { scheduleReaction } from "../schedulers";
 import { utx } from "../transaction";
 
 type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
@@ -20,7 +20,8 @@ export class Reaction implements IReactionImpl {
     private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
 
-    constructor(private _fn: ReactionFn, private _manager?: () => void) {}
+    constructor(private _fn: ReactionFn, private _manager?: () => void) {
+    }
 
     addSubscription(subscription: Subscription): void {
         if (this._shouldSubscribe) {
@@ -30,10 +31,12 @@ export class Reaction implements IReactionImpl {
         this._subscriptions.set(subscription, subscription.revision());
     }
 
-    _notify(state: State, subscription: Subscription): void {
+    _notify(state: NotifyState): void {
         if (state === State.MAYBE_DIRTY) {
-            scheduleStateActualization(subscription as Computed);
-        } else if (this._state === State.CLEAN) {
+            return;
+        }
+
+        if (this._state === State.CLEAN) {
             this._state = State.DIRTY;
             scheduleReaction(this);
         }

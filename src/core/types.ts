@@ -1,5 +1,7 @@
 import { State } from "./constants";
 
+export type NotifyState = State.MAYBE_DIRTY | State.DIRTY;
+
 export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     ? (...args: Args) => R
     : never;
@@ -29,6 +31,8 @@ export interface IObservableImpl<T = any> extends IObservable<T> {
     _addSubscriber(subscriber: Subscriber): void;
 
     _removeSubscriber(subscriber: Subscriber): void;
+
+    _actualizeAndRecompute(): void;
 }
 
 export interface IComputed<T> extends IGettable<T> {
@@ -42,7 +46,7 @@ export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
 
     _checkSubscribersAndPassivate(): void;
 
-    _notify(state: State, subscription: Subscription): void;
+    _notify(state: NotifyState): void;
 
     _actualizeAndRecompute(willHaveSubscriber?: boolean): void;
 }
@@ -60,7 +64,7 @@ export interface IReaction {
 }
 
 export interface IReactionImpl extends SubscriberBase {
-    _notify(state: State, subscription: Subscription): void;
+    _notify(state: NotifyState): void;
 
     _subscribe(): void;
 
