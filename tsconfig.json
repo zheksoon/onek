@@ -3,7 +3,7 @@
         "baseUrl": ".",
         "esModuleInterop": true,
         "moduleResolution": "node",
-        "target": "es2015",
+        "target": "ESNext",
         "module": "commonjs",
         "strict": true,
         "moduleDetection": "force",

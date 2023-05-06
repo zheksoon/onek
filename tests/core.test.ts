@@ -1,20 +1,25 @@
-const {
+import {
     observable,
-    computed: _computed,
-    reaction: _reaction,
+    computed as _computed,
+    reaction as _reaction,
     tx,
     utx,
     action,
-    configure,
-} = require("../src");
+    configure, CheckFn,
+} from "../src";
+import { ReactionFn } from "../src/core";
+import { IComputedGetter } from "../src";
+import { Disposer } from "../types";
 
-const updatesMap = new WeakMap();
+const updatesMap = new WeakMap<any, number>();
 
-const updates = (val) => updatesMap.get(val) ?? updatesMap.get(val.track) ?? 0;
+const updates = (val: any) => updatesMap.get(val) ?? updatesMap.get(val.track) ?? 0;
 
-const trackUpdate = (val) => updatesMap.set(val, updates(val) + 1);
+const trackUpdate = (val: any) => {
+    updatesMap.set(val, updates(val) + 1);
+}
 
-const computed = (fn, checkFn) => {
+const computed = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>) => {
     const comp = _computed(() => {
         trackUpdate(comp);
         return fn();
@@ -23,20 +28,21 @@ const computed = (fn, checkFn) => {
     return comp;
 };
 
-const reaction = (fn, manager) => {
+const reaction = (fn: ReactionFn, manager?: () => void) => {
     const t = {};
     const r = _reaction(() => {
         trackUpdate(t);
         return fn();
     }, manager);
 
+    // @ts-ignore
     r.track = t;
 
     return r;
 };
 
 const getCheck = () => {
-    const check = (a, b) => {
+    const check = (a: any, b: any) => {
         trackUpdate(check);
         return a === b;
     };
@@ -68,12 +74,9 @@ describe("observable", () => {
     });
 
     it("calls checkFn on value set", () => {
-        const check = (a, b) => {
-            trackUpdate(check);
-            return a === b;
-        };
+        const check = getCheck();
 
-        const [o1, seto1] = observable(1, check);
+        const [o1, seto1] = observable<number>(1, check);
 
         const r1 = reaction(() => {
             o1();
@@ -788,7 +791,7 @@ describe("computed", () => {
     });
 
     it("throws when has recursive dependencies", () => {
-        const c1 = computed(() => {
+        const c1: IComputedGetter<number> = computed(() => {
             return c1() * 2;
         });
 
@@ -798,11 +801,11 @@ describe("computed", () => {
     });
 
     it("throws when has recursive dependencies", () => {
-        const c1 = computed(() => {
+        const c1: IComputedGetter<number> = computed(() => {
             return c2() * 2;
         });
 
-        const c2 = computed(() => {
+        const c2: IComputedGetter<number> = computed(() => {
             return c1() + 1;
         });
 
@@ -902,19 +905,21 @@ describe("computed", () => {
         it("Computed should be garbage collected", async () => {
             const [o1, seto1] = observable(0);
 
-            let c1 = computed(() => o1() * 2);
+            let c1: IComputedGetter<number> | null = computed(() => o1() * 2);
 
+            // @ts-ignore
             const weakRef = new WeakRef(c1);
 
             // Set up the FinalizationRegistry
-            const registry = new FinalizationRegistry((resolve) => {
+            // @ts-ignore
+            const registry = new FinalizationRegistry((resolve: () => void) => {
                 // This callback will be called when the object is garbage-collected
                 resolve();
             });
 
             // Create a promise and register the object with the resolve function
-            const gcPromise = new Promise((resolve) => {
-                registry.register(c1, resolve);
+            const gcPromise = new Promise<void>((resolve) => {
+                registry.register(c1!, resolve);
             });
 
             c1();
@@ -924,7 +929,7 @@ describe("computed", () => {
 
             // Run garbage collection if it's available
             for (let i = 0; i < 10; i++) {
-                global.gc();
+                global.gc?.();
                 await new Promise((r) => setTimeout(r, 50));
             }
 
@@ -941,7 +946,7 @@ describe("reaction", () => {
     it("reacts to observable changes", () => {
         const [o1, seto1] = observable(1);
 
-        let r1;
+        let r1: Disposer | null = null;
 
         expect(() => {
             r1 = reaction(() => {
@@ -958,7 +963,8 @@ describe("reaction", () => {
 
         expect(updates(r1)).toBe(3);
 
-        r1();
+        // @ts-ignore
+        r1 && r1();
     });
 
     it("reacts to computed changes", () => {
@@ -1219,9 +1225,9 @@ describe("action", () => {
     });
 
     it("passes arguments and returns value", () => {
-        let _args;
+        let _args: any[] | null = null;
 
-        const a1 = action((...args) => {
+        const a1 = action((...args: any[]) => {
             _args = args;
             return "hello";
         });
@@ -1231,10 +1237,10 @@ describe("action", () => {
     });
 
     it("applies this", () => {
-        let _this;
+        let _this: any;
 
         const obj = {
-            a: action(function () {
+            a: action(function (this: any) {
                 _this = this;
             }),
         };
@@ -1248,7 +1254,7 @@ describe("action", () => {
 describe("configure", () => {
     describe("reactionRunner", () => {
         it("sets custom reaction runner", () => {
-            const custom = (runner) => {
+            const custom = (runner: () => void) => {
                 trackUpdate(custom);
                 runner();
             };
@@ -1270,7 +1276,7 @@ describe("configure", () => {
         });
 
         it("microtask runner works as expected", async () => {
-            const microtask = (runner) => {
+            const microtask = (runner: () => void) => {
                 trackUpdate(microtask);
                 Promise.resolve().then(runner);
             };
@@ -1293,7 +1299,7 @@ describe("configure", () => {
 
             seto2(20);
 
-            // does not run syncronously
+            // does not run synchronously
             expect(updates(r1)).toBe(1);
             expect(updates(microtask)).toBe(1);
 

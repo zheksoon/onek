@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-⚡️ <b>2KB</b> full-featured state management inspired by MobX and Solid.js, <b>batteries included</b> ⚡️
+⚡️ <b>1.7KB</b> full-featured state management inspired by MobX and Solid.js, <b>batteries included</b> ⚡️
 </p>
 
 <p align="center">
@@ -23,8 +23,8 @@
 </p>
 
 **Onek** (reads as **_one-kay_** or **_one-key_**) is a simple but powerful state management library
-for **React** based on a solid foundation of functional reactive data structures from **MobX** and *
-*Solid.js**, providing everything needed for managing state in complex React applications,
+for **React** based on a solid foundation of functional reactive data structures from **MobX** and
+**Solid.js**, providing everything needed for managing state in complex React applications,
 all in a less than **2KB package**.
 
 ## Features
@@ -39,7 +39,7 @@ all in a less than **2KB package**.
 - 💾 **Compatibility** - only ES6 `Set` and `Map` are required
 - 💯 **100% test coverage** with complex cases
 - ⭐️ Written in **100% TypeScript**
-- 📦 ...and all in less than **2KB package**
+- 📦 ...and all in a less than **2KB package**
 
 ## Table of contents
 
