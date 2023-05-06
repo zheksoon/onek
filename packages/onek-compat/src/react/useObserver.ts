@@ -1,9 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-    addAbandonedRenderCleanup,
-    removeAbandonedRenderCleanup,
-} from "onek/src/react";
-import { Reaction, setSubscriber, SubscriberBase } from "onek/src/core";
+import { useLayoutEffect, useMemo, useState } from "react";
+import { Reaction, Revision, setSubscriber, SubscriberBase } from "onek/src/core";
 
 type UnsubscribeFn = () => void;
 
@@ -14,7 +10,6 @@ export interface IObserver extends SubscriberBase {
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [] as const;
-const EMPTY_OBJECT = {} as const;
 const NOOP = () => {};
 
 const NOOP_OBSERVER: IObserver = (callback) => callback();
@@ -25,20 +20,14 @@ export function useObserver(): IObserver {
         return NOOP_OBSERVER;
     }
 
-    const [, triggerUpdate] = useState(EMPTY_OBJECT);
+    const [, triggerUpdate] = useState(new Revision());
 
     const store = useMemo(() => {
-        let didSubscribe = false;
-        let didUnsubscribe = false;
-        let shouldRerender = false;
-
         const reaction = new Reaction(NOOP, () => {
-            if (didSubscribe) {
-                triggerUpdate({});
-            } else {
-                shouldRerender = true;
-            }
+            triggerUpdate(new Revision());
         });
+
+        reaction._shouldSubscribe = false;
 
         const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
@@ -52,37 +41,32 @@ export function useObserver(): IObserver {
 
         observer._addSubscription = reaction._addSubscription.bind(reaction);
 
-        addAbandonedRenderCleanup(reaction);
-
         return {
             _subscriptionEffect(): UnsubscribeFn {
-                removeAbandonedRenderCleanup(reaction);
+                reaction._shouldSubscribe = true;
 
-                if (shouldRerender) {
-                    shouldRerender = false;
-                    triggerUpdate({});
-                }
+                reaction._subscribe();
 
-                didSubscribe = true;
-
-                if (didUnsubscribe) {
-                    reaction._subscribe();
-                    didUnsubscribe = false;
+                if (reaction._missedRun()) {
+                    triggerUpdate(new Revision());
                 }
 
                 return () => {
                     reaction._unsubscribe();
-                    didUnsubscribe = true;
+
+                    reaction._shouldSubscribe = false;
                 };
             },
-            _reaction: reaction,
+            _onBeforeRender() {
+                reaction._unsubscribeAndRemove();
+            },
             _observer: observer,
         };
     }, EMPTY_ARRAY);
 
-    useEffect(store._subscriptionEffect, EMPTY_ARRAY);
+    useLayoutEffect(store._subscriptionEffect, EMPTY_ARRAY);
 
-    store._reaction._unsubscribeAndRemove();
+    store._onBeforeRender();
 
     return store._observer;
 }

@@ -1,0 +1,7 @@
+{
+  "name": "onek/mobx",
+  "version": "0.1.0",
+  "peerDependencies": {
+    "onek": "workspace:onek"
+  }
+}

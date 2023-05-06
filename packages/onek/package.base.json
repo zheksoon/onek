@@ -2,8 +2,7 @@
   "name": "onek",
   "exports": {
     "./src": "./src/index.ts",
-    "./src/core": "./src/core/index.ts",
-    "./src/react": "./src/react/index.ts"
+    "./src/core": "./src/core/index.ts"
   },
   "repository": {
     "directory": "packages/onek"

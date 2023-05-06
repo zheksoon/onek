@@ -44,7 +44,7 @@ export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
 
     _notify(state: State, subscription: Subscription): void;
 
-    _actualizeAndRecompute(): void;
+    _actualizeAndRecompute(willHaveSubscriber?: boolean): void;
 }
 
 export type Destructor = (() => void) | null | undefined | void;

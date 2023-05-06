@@ -64,12 +64,6 @@ export class Computed<T = any> implements IComputedImpl<T> {
         this._checkSubscribers();
     }
 
-    _checkSubscribers(): void {
-        if (!this._subscribers.size && this._state !== State.PASSIVE) {
-            scheduleSubscribersCheck(this);
-        }
-    }
-
     _checkSubscribersAndPassivate(): void {
         if (!this._subscribers.size && this._state !== State.PASSIVE) {
             this._passivate();
@@ -183,6 +177,12 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
 
         return this._value!;
+    }
+
+    private _checkSubscribers(): void {
+        if (!this._subscribers.size && this._state !== State.PASSIVE) {
+            scheduleSubscribersCheck(this);
+        }
     }
 
     private _subscribe(): void {

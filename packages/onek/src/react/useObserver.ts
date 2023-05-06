@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction, setSubscriber } from "../core";
+import { Reaction, Revision, setSubscriber } from "../core";
 import type { SubscriberBase } from "../core/types";
 
 type NotifyFn = () => void;
@@ -23,11 +23,12 @@ export function useObserver(): ObserverFn {
     }
 
     const store = useMemo(() => {
-        let revision = {};
+        let revision = new Revision();
         let subscribers = new Set<NotifyFn>();
 
         const reaction = new Reaction(NOOP, () => {
-            revision = {};
+            revision = new Revision();
+
             subscribers.forEach((notify) => {
                 notify();
             });
@@ -64,20 +65,24 @@ export function useObserver(): ObserverFn {
 
                     if (!subscribers.size) {
                         reaction._unsubscribe();
+
+                        reaction._shouldSubscribe = false;
                     }
                 };
             },
             _getRevision() {
                 return revision;
             },
-            _reaction: reaction,
+            _onBeforeRender() {
+                reaction._unsubscribeAndRemove();
+            },
             _observer: observer,
         };
     }, EMPTY_ARRAY);
 
     useSyncExternalStore(store._subscribe, store._getRevision);
 
-    store._reaction._unsubscribeAndRemove();
+    store._onBeforeRender();
 
     return store._observer;
 }

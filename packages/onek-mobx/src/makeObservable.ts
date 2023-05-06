@@ -1,5 +1,4 @@
-import { Computed, Observable } from "../classes";
-import { IGettable } from "../types";
+import { Computed, Observable, IGettable } from "onek";
 
 const GET_CONTEXT = {};
 const NOTIFY_CONTEXT = {};
