@@ -46,7 +46,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
 
     get(_subscriber = subscriber): T {
         if (_subscriber) {
-            _subscriber._addSubscription(this);
+            _subscriber.addSubscription(this);
         }
         return this._value;
     }
@@ -84,7 +84,7 @@ export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     return [get, set] as const;
 }
 
-observable.instance = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
+observable.box = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
     return new Observable(value, checkFn);
 };
 

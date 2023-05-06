@@ -1,11 +1,10 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction, Revision, setSubscriber } from "../core";
-import type { SubscriberBase } from "../core/types";
+import { Reaction, Revision, setSubscriber, SubscriberBase } from "../core";
 
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
-export interface ObserverFn extends SubscriberBase {
+export interface IObserver extends SubscriberBase {
     <T>(callback: () => T): T;
 }
 
@@ -14,10 +13,10 @@ const isInBrowser = typeof window !== "undefined";
 const EMPTY_ARRAY = [] as const;
 const NOOP = () => {};
 
-const NOOP_OBSERVER: ObserverFn = (callback) => callback();
-NOOP_OBSERVER._addSubscription = NOOP;
+const NOOP_OBSERVER: IObserver = (callback) => callback();
+NOOP_OBSERVER.addSubscription = NOOP;
 
-export function useObserver(): ObserverFn {
+export function useObserver(): IObserver {
     if (!isInBrowser) {
         return NOOP_OBSERVER;
     }
@@ -36,7 +35,7 @@ export function useObserver(): ObserverFn {
 
         reaction._shouldSubscribe = false;
 
-        const observer: ObserverFn = (callback) => {
+        const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
 
             try {
@@ -46,7 +45,7 @@ export function useObserver(): ObserverFn {
             }
         };
 
-        observer._addSubscription = reaction._addSubscription.bind(reaction);
+        observer.addSubscription = reaction.addSubscription.bind(reaction);
 
         return {
             _subscribe(notify: NotifyFn): UnsubscribeFn {

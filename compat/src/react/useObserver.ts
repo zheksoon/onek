@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from "react";
-import { Reaction, Revision, setSubscriber, SubscriberBase } from "onek/src/core";
+import { Reaction, Revision, setSubscriber, SubscriberBase } from "onek";
 
 type UnsubscribeFn = () => void;
 
@@ -13,7 +13,7 @@ const EMPTY_ARRAY = [] as const;
 const NOOP = () => {};
 
 const NOOP_OBSERVER: IObserver = (callback) => callback();
-NOOP_OBSERVER._addSubscription = NOOP;
+NOOP_OBSERVER.addSubscription = NOOP;
 
 export function useObserver(): IObserver {
     if (!isInBrowser) {
@@ -39,7 +39,7 @@ export function useObserver(): IObserver {
             }
         };
 
-        observer._addSubscription = reaction._addSubscription.bind(reaction);
+        observer.addSubscription = reaction.addSubscription.bind(reaction);
 
         return {
             _subscriptionEffect(): UnsubscribeFn {

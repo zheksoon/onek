@@ -1,15 +1,15 @@
 dist/
 types/
-packages/*/README.md
-packages/*/package.json
+
+.idea/
 
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
 
 # Logs
 logs

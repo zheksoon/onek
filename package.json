@@ -1,32 +1,124 @@
 {
-  "name": "onek-packages",
-  "private": true,
-  "workspaces": {
-    "packages": [
-      "packages/*"
+    "name": "onek",
+    "version": "0.1.0",
+    "description": "⚡️1.7KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zheksoon/onek.git"
+    },
+    "main": "dist/onek.js",
+    "source": "src/index.ts",
+    "umd:main": "./dist/onek.umd.js",
+    "module": "dist/onek.module.js",
+    "unpkg": "./dist/onek.umd.js",
+    "types": "./types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./types/index.d.ts",
+            "browser": "./dist/onek.module.js",
+            "umd": "./dist/onek.umd.js",
+            "import": "./dist/onek.mjs",
+            "require": "./dist/onek.js"
+        },
+        "./compat": {
+            "types": "./compat/types/index.d.ts",
+            "browser": "./compat/dist/index.module.js",
+            "umd": "./compat/dist/index.umd.js",
+            "import": "./compat/dist/index.mjs",
+            "require": "./compat/dist/index.js"
+        },
+        "./mobx": {
+            "types": "./mobx/types/index.d.ts",
+            "browser": "./mobx/dist/index.module.js",
+            "umd": "./mobx/dist/index.umd.js",
+            "import": "./mobx/dist/index.mjs",
+            "require": "./mobx/dist/index.js"
+        }
+    },
+    "packageManager": "yarn@3.5.0",
+    "scripts": {
+        "build": "yarn run build:onek && yarn run build:compat && yarn run build:mobx",
+        "build:full": "yarn run build:onek --no-compress && yarn run build:compat --no-compress && yarn run build:mobx --no-compress",
+        "build:onek": "yarn exec microbundle",
+        "build:compat": "cd ./compat && yarn exec microbundle --external='onek'",
+        "build:mobx": "cd ./mobx && yarn exec microbundle --external='onek'",
+        "test": "node --expose-gc $(yarn bin jest)"
+    },
+    "peerDependencies": {
+        "react": ">=18.0.0"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.4.0",
+        "@types/node": "^20.1.0",
+        "@types/react": ">=18.0.0",
+        "jest": "^29.0.3",
+        "microbundle": "^0.15.1",
+        "react": ">=18.0.0",
+        "ts-jest": "^29.0.5",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.0.0"
+    },
+    "files": [
+        "dist/",
+        "types/",
+        "compat/dist",
+        "compat/types",
+        "compat/package.json",
+        "mobx/dist",
+        "mobx/types",
+        "mobx/package.json",
+        "LICENSE",
+        "README.md",
+        "package.json"
     ],
-    "nohoist": [
-      "**/ts-jest",
-      "**/ts-jest/**"
-    ]
-  },
-  "scripts": {
-    "publish:all": "yarn run sync && yarn workspaces foreach run publish",
-    "prepublish": "node packages/sync-readme.js",
-    "build": "yarn run sync && yarn workspaces foreach -ptv run build",
-    "build:full": "yarn run sync && yarn workspaces foreach -ptv run build:full",
-    "build:types": "yarn run sync && yarn workspaces foreach -ptv run build:types",
-    "test": "yarn run sync && yarn workspaces foreach run test $(yarn bin jest)",
-    "sync": "node packages/sync-package-json.js"
-  },
-  "devDependencies": {
-    "@types/node": "latest",
-    "fs-extra": "^11.1.1",
-    "jest": "^29.0.3",
-    "lodash": "^4.17.21",
-    "microbundle": "^0.15.1",
-    "prettier": "^2.8.7",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.0"
-  }
+    "keywords": [
+        "state",
+        "state management",
+        "reactive",
+        "observable",
+        "computed",
+        "autorun",
+        "frp",
+        "functional reactive programming",
+        "zustand",
+        "jotai",
+        "react",
+        "mobx",
+        "solid",
+        "solid.js",
+        "recoil",
+        "preact signals",
+        "valtio",
+        "unstated",
+        "1kb",
+        "tiny",
+        "small",
+        "compact",
+        "lightweight",
+        "minimal",
+        "performance",
+        "typescript",
+        "hooks",
+        "shallow equality"
+    ],
+    "author": "Eugene Daragan",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/zheksoon/onek/issues"
+    },
+    "homepage": "https://github.com/zheksoon/onek#readme",
+    "minify": {
+        "mangle": {
+            "properties": {
+                "regex": "^_"
+            },
+            "keep_classnames": true,
+            "reserved": [
+                "Observable",
+                "Computed",
+                "Reaction",
+                "Revision"
+            ]
+        }
+    }
 }

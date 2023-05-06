@@ -22,7 +22,7 @@ export class Reaction implements IReactionImpl {
 
     constructor(private _fn: ReactionFn, private _manager?: () => void) {}
 
-    _addSubscription(subscription: Subscription): void {
+    addSubscription(subscription: Subscription): void {
         if (this._shouldSubscribe) {
             subscription._addSubscriber(this);
         }

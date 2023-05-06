@@ -10,7 +10,7 @@ export type Subscription = IObservableImpl | IComputedImpl;
 export interface IRevision {}
 
 export interface SubscriberBase {
-    _addSubscription(subscription: Subscription): void;
+    addSubscription(subscription: Subscription): void;
 }
 
 export type MaybeSubscriber = SubscriberBase | null;

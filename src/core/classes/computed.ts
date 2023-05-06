@@ -43,7 +43,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
             : undefined;
     }
 
-    _addSubscription(subscription: Subscription): void {
+    addSubscription(subscription: Subscription): void {
         if (this._shouldSubscribe) {
             subscription._addSubscriber(this);
         }
@@ -173,7 +173,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
         this._actualizeAndRecompute(willHaveSubscriber);
 
         if (willHaveSubscriber) {
-            _subscriber._addSubscription(this);
+            _subscriber.addSubscription(this);
         }
 
         return this._value!;
@@ -224,7 +224,7 @@ export function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): ICompu
     return get;
 }
 
-computed.instance = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputed<T> => {
+computed.box = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputed<T> => {
     return new Computed(fn, checkFn);
 };
 

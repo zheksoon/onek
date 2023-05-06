@@ -3,6 +3,7 @@ export type {
     IObservable,
     IComputed,
     IReaction,
+    IRevision,
     CheckFn,
     UpdaterFn,
     IGetter,
@@ -11,6 +12,7 @@ export type {
     ISetter,
     IOptions,
     Disposer,
+    SubscriberBase,
 } from "./core/types";
 export {
     observable,
@@ -19,11 +21,13 @@ export {
     Computed,
     reaction,
     Reaction,
+    Revision,
     tx,
     utx,
     withUntracked,
     action,
     configure,
     shallowEquals,
+    setSubscriber,
 } from "./core";
-export { useObserver, ObserverFn } from "./react";
+export { useObserver, IObserver } from "./react";
