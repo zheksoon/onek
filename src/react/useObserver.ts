@@ -33,7 +33,7 @@ export function useObserver(): IObserver {
             });
         });
 
-        reaction._shouldSubscribe = false;
+        reaction.shouldSubscribe = false;
 
         const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
@@ -51,11 +51,11 @@ export function useObserver(): IObserver {
             _subscribe(notify: NotifyFn): UnsubscribeFn {
                 subscribers.add(notify);
 
-                reaction._shouldSubscribe = true;
+                reaction.shouldSubscribe = true;
 
-                reaction._subscribe();
+                reaction.subscribe();
 
-                if (reaction._missedRun()) {
+                if (reaction.missedRun()) {
                     notify();
                 }
 
@@ -63,9 +63,9 @@ export function useObserver(): IObserver {
                     subscribers.delete(notify);
 
                     if (!subscribers.size) {
-                        reaction._unsubscribe();
+                        reaction.unsubscribe();
 
-                        reaction._shouldSubscribe = false;
+                        reaction.shouldSubscribe = false;
                     }
                 };
             },
@@ -73,7 +73,7 @@ export function useObserver(): IObserver {
                 return revision;
             },
             _onBeforeRender() {
-                reaction._unsubscribeAndRemove();
+                reaction.unsubscribeAndCleanup();
             },
             _observer: observer,
         };

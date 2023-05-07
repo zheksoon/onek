@@ -10,10 +10,11 @@ import type {
 } from "../types";
 import { State } from "../constants";
 import { setSubscriber, subscriber } from "../subscriber";
-import { scheduleStateActualization, scheduleSubscribersCheck } from "../schedulers";
+import { scheduleSubscribersCheck } from "../schedulers";
 import { withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
 import { Revision } from "./revision";
+import { checkRevisions, notifySubscribers, subscribe, unsubscribe } from "./common";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -70,10 +71,10 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
     }
 
-    _notify(state: NotifyState) {
+    _notify(state: NotifyState, subscription: Subscription) {
         const oldState = this._state;
 
-        if (oldState === state || oldState === State.DIRTY) {
+        if (oldState === state) {
             return;
         }
 
@@ -94,13 +95,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
     _actualizeAndRecompute(willHaveSubscriber = false): void {
         if (this._state === State.PASSIVE) {
-            let revisionsChanged = false;
-
-            this._subscriptions.forEach((revision, subscription) => {
-                revisionsChanged ||= subscription.revision() !== revision;
-            });
-
-            if (!revisionsChanged) {
+            if (!checkRevisions(this._subscriptions)) {
                 return;
             }
         }
@@ -186,25 +181,15 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     private _subscribe(): void {
-        this._subscriptions.forEach((revision, subscription) => {
-            subscription._addSubscriber(this);
-        });
+        subscribe(this._subscriptions, this);
     }
 
     private _unsubscribe(): void {
-        this._subscriptions.forEach((revision, subscription) => {
-            subscription._removeSubscriber(this);
-        });
+        unsubscribe(this._subscriptions, this);
     }
 
     private _notifySubscribers(state: NotifyState): void {
-        this._subscribers.forEach((subscriber) => {
-            subscriber._notify(state);
-        });
-
-        if (state === State.MAYBE_DIRTY) {
-            scheduleStateActualization(this);
-        }
+        notifySubscribers(this._subscribers, state, this);
     }
 
     private _passivate(): void {

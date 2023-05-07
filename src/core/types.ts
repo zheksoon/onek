@@ -46,7 +46,7 @@ export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
 
     _checkSubscribersAndPassivate(): void;
 
-    _notify(state: NotifyState): void;
+    _notify(state: NotifyState, subscription: Subscription): void;
 
     _actualizeAndRecompute(willHaveSubscriber?: boolean): void;
 }
@@ -56,19 +56,19 @@ export type ReactionFn = () => Destructor;
 export type Disposer = (() => void) & { run: () => void };
 
 export interface IReaction {
-    new (fn: ReactionFn, manager?: () => void): IReaction;
-
     destroy(): void;
 
     run(): void;
+
+    subscribe(): void;
+
+    unsubscribe(): void;
+
+    unsubscribeAndCleanup(): void;
 }
 
-export interface IReactionImpl extends SubscriberBase {
-    _notify(state: NotifyState): void;
-
-    _subscribe(): void;
-
-    _unsubscribe(): void;
+export interface IReactionImpl extends IReaction, SubscriberBase {
+    _notify(state: NotifyState, subscription: Subscription): void;
 
     _runManager(): void;
 }

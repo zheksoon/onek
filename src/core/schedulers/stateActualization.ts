@@ -1,8 +1,9 @@
 import { Computed } from "../classes";
+import { Subscription } from "../types";
 
-export const stateActualizationQueue: Set<Computed> = new Set();
+export const stateActualizationQueue: Set<Subscription> = new Set();
 
-export function scheduleStateActualization(computed: Computed) {
+export function scheduleStateActualization(computed: Subscription) {
     stateActualizationQueue.add(computed);
 }
 

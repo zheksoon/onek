@@ -27,7 +27,7 @@ export function useObserver(): IObserver {
             triggerUpdate(new Revision());
         });
 
-        reaction._shouldSubscribe = false;
+        reaction.shouldSubscribe = false;
 
         const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
@@ -43,22 +43,22 @@ export function useObserver(): IObserver {
 
         return {
             _subscriptionEffect(): UnsubscribeFn {
-                reaction._shouldSubscribe = true;
+                reaction.shouldSubscribe = true;
 
-                reaction._subscribe();
+                reaction.subscribe();
 
-                if (reaction._missedRun()) {
+                if (reaction.missedRun()) {
                     triggerUpdate(new Revision());
                 }
 
                 return () => {
-                    reaction._unsubscribe();
+                    reaction.unsubscribe();
 
-                    reaction._shouldSubscribe = false;
+                    reaction.shouldSubscribe = false;
                 };
             },
             _onBeforeRender() {
-                reaction._unsubscribeAndRemove();
+                reaction.unsubscribeAndCleanup();
             },
             _observer: observer,
         };

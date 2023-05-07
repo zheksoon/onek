@@ -36,7 +36,7 @@ export function untracked<T>(fn: () => T): T {
 }
 
 export function withUntracked<T extends Function>(fn: T): IdentityFn<T> {
-    return function(this: any) {
+    return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         try {
             return fn.apply(this, arguments as any);
@@ -47,7 +47,7 @@ export function withUntracked<T extends Function>(fn: T): IdentityFn<T> {
 }
 
 export function action<T extends Function>(fn: T): IdentityFn<T> {
-    return function(this: any) {
+    return function (this: any) {
         const oldSubscriber = setSubscriber(null);
         txDepth += 1;
         try {

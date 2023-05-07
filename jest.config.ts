@@ -7,6 +7,7 @@ export default {
     collectCoverage: true,
     coverageDirectory: "coverage",
     coverageProvider: "v8",
+    coverageReporters: ['json', 'lcov', 'text-summary', 'html'],
     transform: {
         "^.+\\.tsx?$": "ts-jest",
     },

@@ -1,15 +1,20 @@
 import {
-    observable,
-    computed as _computed,
-    reaction as _reaction,
-    tx,
-    utx,
     action,
-    configure, CheckFn,
+    CheckFn,
+    computed as _computed,
+    Computed,
+    configure,
+    Disposer,
+    IComputedGetter,
+    observable,
+    Observable,
+    reaction as _reaction,
+    Reaction,
+    tx,
+    untracked,
+    utx,
 } from "../src";
 import { ReactionFn } from "../src/core";
-import { IComputedGetter } from "../src";
-import { Disposer } from "../types";
 
 const updatesMap = new WeakMap<any, number>();
 
@@ -17,7 +22,7 @@ const updates = (val: any) => updatesMap.get(val) ?? updatesMap.get(val.track) ?
 
 const trackUpdate = (val: any) => {
     updatesMap.set(val, updates(val) + 1);
-}
+};
 
 const computed = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>) => {
     const comp = _computed(() => {
@@ -98,12 +103,44 @@ describe("observable", () => {
         r1();
     });
 
+    it("defaults to shallowEqual when checkFn is boolean", () => {
+        const [o1, seto1] = observable<number>(1, true);
+
+        const r1 = reaction(() => {
+            o1();
+        });
+
+        expect(updates(r1)).toBe(1);
+
+        seto1(2);
+
+        expect(updates(r1)).toBe(2);
+
+        seto1(2);
+
+        expect(updates(r1)).toBe(2);
+
+        r1();
+    });
+
     it("updates value with updater fn", () => {
         const [o1, seto1] = observable(1);
 
         seto1((value) => value + 1);
 
         expect(o1()).toBe(2);
+    });
+
+    it("observable.box return instance of Observable", () => {
+        const box = observable.box(1, true);
+
+        expect(box).toBeInstanceOf(Observable);
+    });
+
+    it("observable.prop return instance of Observable ignoring type", () => {
+        const box = observable.prop(1, true);
+
+        expect(box).toBeInstanceOf(Observable);
     });
 });
 
@@ -359,6 +396,28 @@ describe("computed", () => {
             expect(c1()).toBe(2);
             expect(updates(c1)).toBe(3);
             expect(updates(check)).toBe(2);
+        });
+
+        it("uses default shallowEquals when checkFn is boolean", () => {
+            const [o1, seto1] = observable(1);
+
+            const c1 = computed(() => o1() * 2, true);
+
+            const r1 = reaction(() => {
+                c1();
+            });
+
+            expect(updates(r1)).toBe(1);
+
+            seto1(2);
+
+            expect(updates(r1)).toBe(2);
+
+            seto1(2);
+
+            expect(updates(r1)).toBe(2);
+
+            r1();
         });
 
         it("next computed in chain not recomputed when value does not change, o -> v -> c", () => {
@@ -788,6 +847,33 @@ describe("computed", () => {
             expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(1);
         });
+
+        it("multiple sources", () => {
+            const [o1, seto1] = observable(1);
+            const [o2, seto2] = observable(2);
+
+            const c1 = computed(() => o1() * 2, true);
+            const c2 = computed(() => o2() * 2, true);
+
+            const c3 = computed(() => c1() + c2());
+
+            const r1 = reaction(() => {
+                c3();
+            });
+
+            expect(updates(r1)).toBe(1);
+            expect(c3()).toBe(6);
+
+            tx(() => {
+                seto1(2);
+                seto2(3);
+            });
+
+            expect(updates(r1)).toBe(2);
+            expect(c3()).toBe(10);
+
+            r1();
+        });
     });
 
     it("throws when has recursive dependencies", () => {
@@ -897,12 +983,12 @@ describe("computed", () => {
         expect(updates(c)).toBe(2);
     });
 
-    describe("passive computed", () => {
+    describe("passive state", () => {
         if (!global.gc) {
             return;
         }
 
-        it("Computed should be garbage collected", async () => {
+        it("passive computed is garbage collected when not referenced", async () => {
             const [o1, seto1] = observable(0);
 
             let c1: IComputedGetter<number> | null = computed(() => o1() * 2);
@@ -939,6 +1025,48 @@ describe("computed", () => {
             // Check if the object was garbage-collected
             expect(weakRef.deref()).toBeUndefined();
         });
+
+        it("resurrects when somebody is subscribed", () => {
+            const [o1, seto1] = observable(1);
+            const [o2, seto2] = observable(false);
+
+            const c1 = computed(() => o1() * 2);
+
+            const r1 = reaction(() => {
+                if (o2()) {
+                    c1();
+                }
+            });
+
+            c1();
+
+            expect(updates(c1)).toBe(1);
+            expect(updates(r1)).toBe(1);
+
+            seto2(true);
+
+            expect(updates(c1)).toBe(1);
+            expect(updates(r1)).toBe(2);
+
+            seto1(2);
+
+            expect(updates(c1)).toBe(2);
+            expect(updates(r1)).toBe(3);
+
+            r1();
+        });
+    });
+
+    it("computed.box returns instance of Computed", () => {
+        const c1 = _computed.box(() => 1, true);
+
+        expect(c1).toBeInstanceOf(Computed);
+    });
+
+    it("computed.prop returns instance of Computed (ignoring type)", () => {
+        const c1 = _computed.prop(() => 1);
+
+        expect(c1).toBeInstanceOf(Computed);
     });
 });
 
@@ -1059,8 +1187,128 @@ describe("reaction", () => {
         expect(updates(manager)).toBe(1);
         expect(updates(body)).toBe(1);
     });
+
+    it("executes destructor fn", () => {
+        const [o1, seto1] = observable(1);
+
+        const destructor = () => {
+            trackUpdate(destructor);
+        };
+
+        const r1 = reaction(() => {
+            o1();
+
+            return destructor;
+        });
+
+        expect(updates(r1)).toBe(1);
+        expect(updates(destructor)).toBe(0);
+
+        r1();
+
+        expect(updates(r1)).toBe(1);
+        expect(updates(destructor)).toBe(1);
+    });
+
+    it("scheduled reaction doesn't run when destroyed", () => {
+        const [o1, seto1] = observable(1);
+
+        const r1 = reaction(() => {
+            o1();
+        });
+
+        expect(updates(r1)).toBe(1);
+
+        seto1(2);
+
+        expect(updates(r1)).toBe(2);
+
+        tx(() => {
+            seto1(3);
+            r1();
+        });
+
+        expect(updates(r1)).toBe(2);
+    });
+
+    it("unsubscribe and subscribe work as expected", () => {
+        const [o1, seto1] = observable(1);
+
+        const r1 = new Reaction(() => {
+            trackUpdate(r1);
+            o1();
+        });
+
+        r1.run();
+
+        expect(updates(r1)).toBe(1);
+
+        seto1(2);
+
+        expect(updates(r1)).toBe(2);
+
+        r1.unsubscribe();
+
+        seto1(3);
+
+        expect(updates(r1)).toBe(2);
+
+        r1.subscribe();
+
+        seto1(4);
+
+        expect(updates(r1)).toBe(3);
+
+        r1.destroy();
+    });
+
+    it("missedRun works is true when subscriptions are changed when reaction is unsubscribed", () => {
+        const [o1, seto1] = observable(1);
+
+        const r1 = new Reaction(() => {
+            trackUpdate(r1);
+            o1();
+        });
+
+        r1.run();
+
+        expect(updates(r1)).toBe(1);
+
+        seto1(2);
+
+        expect(updates(r1)).toBe(2);
+        expect(r1.missedRun()).toBe(false);
+
+        r1.unsubscribe();
+
+        seto1(3);
+
+        expect(updates(r1)).toBe(2);
+        expect(r1.missedRun()).toBe(true);
+    });
 });
 
+describe("untracked", () => {
+    it("makes observable access untracked", () => {
+        const [o1, seto1] = observable(1);
+        const [o2, seto2] = observable(2);
+
+        let value: number | null = null;
+
+        const r1 = reaction(() => {
+            o1();
+            value = untracked(() => o2());
+        });
+
+        expect(updates(r1)).toBe(1);
+        expect(value).toBe(2);
+
+        seto2(3);
+
+        expect(updates(r1)).toBe(1);
+        expect(value).toBe(2);
+    });
+});
 describe("tx", () => {
     it("runs reactions after transaction is ended", () => {
         const [o1, seto1] = observable(1);

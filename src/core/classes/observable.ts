@@ -14,6 +14,7 @@ import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
+import { notifySubscribers } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = new Revision();
@@ -66,7 +67,6 @@ export class Observable<T = any> implements IObservableImpl<T> {
 
             if (this._checkFn && this._checkFn(this._value, newValue as T)) {
                 return;
-
             }
 
             this._value = newValue as T;
@@ -77,10 +77,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
     }
 
     notify(): void {
-        this._subscribers.forEach((subs) => {
-            subs._notify(State.DIRTY);
-        });
-
+        notifySubscribers(this._subscribers, State.DIRTY, this);
         endTx();
     }
 }
