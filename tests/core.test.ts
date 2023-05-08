@@ -10,6 +10,7 @@ import {
     Observable,
     reaction as _reaction,
     Reaction,
+    shallowEquals,
     tx,
     untracked,
     utx,
@@ -1500,8 +1501,8 @@ describe("action", () => {
 });
 
 describe("configure", () => {
-    describe("reactionRunner", () => {
-        it("sets custom reaction runner", () => {
+    describe("reactionScheduler", () => {
+        it("sets custom reaction scheduler", () => {
             const custom = (runner: () => void) => {
                 trackUpdate(custom);
                 runner();
@@ -1523,7 +1524,7 @@ describe("configure", () => {
             configure({ reactionScheduler: (runner) => runner() });
         });
 
-        it("microtask runner works as expected", async () => {
+        it("microtask scheduler works as expected", async () => {
             const microtask = (runner: () => void) => {
                 trackUpdate(microtask);
                 Promise.resolve().then(runner);
@@ -1558,5 +1559,211 @@ describe("configure", () => {
 
             configure({ reactionScheduler: (runner) => runner() });
         });
+    });
+
+    describe("reactionExceptionHandler", () => {
+        const error = console.error;
+
+        beforeAll(() => {
+            console.error = jest.fn();
+        });
+
+        afterAll(() => {
+            console.error = error;
+        });
+
+        it("default handler does console.log", () => {
+            const [o1, seto1] = observable(1);
+
+            const r1 = reaction(() => {
+                if (o1() > 10) {
+                    throw new Error("too much");
+                }
+            });
+
+            expect(console.error).not.toHaveBeenCalled();
+
+            seto1(20);
+
+            expect(console.error).toHaveBeenCalled();
+        });
+
+        it("sets custom handler", () => {
+            const handler = jest.fn();
+
+            configure({
+                reactionExceptionHandler: handler,
+            });
+
+            const [o1, seto1] = observable(1);
+
+            const r1 = reaction(() => {
+                if (o1() > 10) {
+                    throw new Error("too much");
+                }
+            });
+
+            expect(handler).not.toHaveBeenCalled();
+
+            seto1(20);
+
+            expect(handler).toHaveBeenCalled();
+        });
+    });
+});
+
+describe("shallowEquals", () => {
+    test("primitives: equal values", () => {
+        expect(shallowEquals(42, 42)).toBe(true);
+        expect(shallowEquals("hello", "hello")).toBe(true);
+        expect(shallowEquals(null, null)).toBe(true);
+        expect(shallowEquals(undefined, undefined)).toBe(true);
+        expect(shallowEquals(true, true)).toBe(true);
+        expect(shallowEquals(false, false)).toBe(true);
+    });
+
+    test("primitives: unequal values", () => {
+        expect(shallowEquals(42, 24)).toBe(false);
+        expect(shallowEquals("hello", "world")).toBe(false);
+        expect(shallowEquals(null, undefined)).toBe(false);
+        expect(shallowEquals(true, false)).toBe(false);
+    });
+
+    test("arrays: equal shallow arrays", () => {
+        expect(shallowEquals([1, 2, 3], [1, 2, 3])).toBe(true);
+        expect(shallowEquals(["a", "b", "c"], ["a", "b", "c"])).toBe(true);
+        expect(shallowEquals([true, false], [true, false])).toBe(true);
+    });
+
+    test("arrays: unequal shallow arrays", () => {
+        expect(shallowEquals([1, 2, 3], [1, 2, 4])).toBe(false);
+        expect(shallowEquals(["a", "b", "c"], ["a", "b"])).toBe(false);
+        expect(shallowEquals([true, false], [false, true])).toBe(false);
+    });
+
+    test("plain objects: equal shallow objects", () => {
+        expect(shallowEquals({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true);
+        expect(shallowEquals({ a: "hello", b: "world" }, { a: "hello", b: "world" })).toBe(true);
+        expect(shallowEquals({ a: true, b: false }, { a: true, b: false })).toBe(true);
+    });
+
+    test("plain objects: unequal shallow objects", () => {
+        expect(shallowEquals({ a: 1, b: 2 }, { a: 1, b: 3 })).toBe(false);
+        expect(shallowEquals({ a: 1, b: 2 }, { a: 1 })).toBe(false);
+        expect(
+            shallowEquals(
+                { a: "hello", b: "world" },
+                {
+                    a: "hello",
+                    b: "universe",
+                }
+            )
+        ).toBe(false);
+    });
+
+    test("sets: equal shallow sets", () => {
+        expect(shallowEquals(new Set([1, 2, 3]), new Set([1, 2, 3]))).toBe(true);
+        expect(shallowEquals(new Set(["a", "b", "c"]), new Set(["a", "b", "c"]))).toBe(true);
+        expect(shallowEquals(new Set([true, false]), new Set([true, false]))).toBe(true);
+    });
+
+    test("sets: unequal shallow sets", () => {
+        expect(shallowEquals(new Set([1, 2, 3]), new Set([1, 2, 4]))).toBe(false);
+        expect(shallowEquals(new Set(["a", "b", "c"]), new Set(["a", "b"]))).toBe(false);
+        expect(shallowEquals(new Set([true, false]), new Set([false]))).toBe(false);
+    });
+
+    test("maps: equal shallow maps", () => {
+        expect(
+            shallowEquals(
+                new Map([
+                    ["a", 1],
+                    ["b", 2],
+                ]),
+                new Map([
+                    ["a", 1],
+                    ["b", 2],
+                ])
+            )
+        ).toBe(true);
+        expect(
+            shallowEquals(
+                new Map([
+                    [1, "hello"],
+                    [2, "world"],
+                ]),
+                new Map([
+                    [1, "hello"],
+                    [2, "world"],
+                ])
+            )
+        ).toBe(true);
+        expect(
+            shallowEquals(
+                new Map([
+                    ["a", true],
+                    ["b", false],
+                ]),
+                new Map([
+                    ["a", true],
+                    ["b", false],
+                ])
+            )
+        ).toBe(true);
+    });
+
+    test("maps: unequal shallow maps", () => {
+        expect(
+            shallowEquals(
+                new Map([
+                    ["a", 1],
+                    ["b", 2],
+                ]),
+                new Map([
+                    ["a", 1],
+                    ["b", 3],
+                ])
+            )
+        ).toBe(false);
+        expect(
+            shallowEquals(
+                new Map([
+                    ["a", 1],
+                    ["b", 2],
+                ]),
+                new Map([["a", 1]])
+            )
+        ).toBe(false);
+        expect(
+            shallowEquals(
+                new Map([
+                    [1, "hello"],
+                    [2, "world"],
+                ]),
+                new Map([
+                    [1, "hello"],
+                    [2, "universe"],
+                ])
+            )
+        ).toBe(false);
+    });
+
+    test("different types", () => {
+        // @ts-ignore
+        expect(shallowEquals(42, "42")).toBe(false);
+        // @ts-ignore
+        expect(shallowEquals([1, 2, 3], { a: 1, b: 2, c: 3 })).toBe(false);
+        // @ts-ignore
+        expect(
+            shallowEquals(
+                new Set([1, 2, 3]),
+                // @ts-ignore
+                new Map([
+                    ["a", 1],
+                    ["b", 2],
+                    ["c", 3],
+                ])
+            )
+        ).toBe(false);
     });
 });

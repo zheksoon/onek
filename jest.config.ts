@@ -4,10 +4,13 @@
  */
 
 export default {
+    moduleNameMapper: {
+        onek: "<rootDir>/src/",
+    },
     collectCoverage: true,
     coverageDirectory: "coverage",
     coverageProvider: "v8",
-    coverageReporters: ['json', 'lcov', 'text-summary', 'html'],
+    coverageReporters: ["json", "lcov", "text-summary", "html"],
     transform: {
         "^.+\\.tsx?$": "ts-jest",
     },

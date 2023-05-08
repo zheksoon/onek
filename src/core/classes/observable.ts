@@ -6,6 +6,7 @@ import type {
     IRevision,
     ISetter,
     Subscriber,
+    SubscriberBase,
     UpdaterFn,
 } from "../types";
 import { State } from "../constants";
@@ -70,13 +71,14 @@ export class Observable<T = any> implements IObservableImpl<T> {
             }
 
             this._value = newValue as T;
-            this._revision = new Revision();
         }
 
         this.notify();
     }
 
     notify(): void {
+        this._revision = new Revision();
+
         notifySubscribers(this._subscribers, State.DIRTY, this);
         endTx();
     }

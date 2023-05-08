@@ -18,13 +18,15 @@ export interface SubscriberBase {
 export type MaybeSubscriber = SubscriberBase | null;
 
 export interface IGettable<T> {
-    get(_subscriber?: Subscriber): T;
+    get(_subscriber?: SubscriberBase): T;
 
     revision(): IRevision;
 }
 
 export interface IObservable<T> extends IGettable<T> {
     set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
+
+    notify(): void;
 }
 
 export interface IObservableImpl<T = any> extends IObservable<T> {
@@ -77,7 +79,7 @@ export type CheckFn<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;
 
 export interface IGetter<T> {
-    (subscriber?: Subscriber): T;
+    (subscriber?: SubscriberBase): T;
 }
 
 export interface ISetter<T> {

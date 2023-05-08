@@ -1,4 +1,4 @@
-import { Computed, Observable, IGettable } from "onek";
+import { Computed, IGettable, Observable, tx } from "onek";
 
 const GET_CONTEXT = {};
 const NOTIFY_CONTEXT = {};
@@ -19,11 +19,13 @@ export function from<T>(fn: () => T): IGettable<T> | undefined {
 
 export function notify(thunk: () => any): void {
     getterContext = NOTIFY_CONTEXT;
-    try {
-        thunk();
-    } finally {
-        getterContext = null;
-    }
+    tx(() => {
+        try {
+            thunk();
+        } finally {
+            getterContext = null;
+        }
+    });
 }
 
 export function makeObservable<T extends {}>(obj: T): T {
@@ -45,7 +47,7 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (getterContext === null) {
+                        if (!getterContext) {
                             return prop.get();
                         } else if (getterContext === GET_CONTEXT) {
                             getterResult = prop;
@@ -63,7 +65,7 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (getterContext === null) {
+                        if (!getterContext) {
                             return prop.get();
                         } else if (getterContext === GET_CONTEXT) {
                             getterResult = prop;
