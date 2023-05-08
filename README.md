@@ -20,9 +20,12 @@
   <a href="https://github.com/zheksoon/onek/blob/main/LICENSE" > 
     <img src="https://badgen.net/github/license/zheksoon/onek?color=5fbfcd" alt="Onek license"/> 
   </a>
+  <a href="https://codecov.io/github/zheksoon/onek" > 
+    <img src="https://codecov.io/github/zheksoon/onek/branch/main/graph/badge.svg?token=5ZQAEJ0A9H"/> 
+  </a>
 </p>
 
-**Onek** (reads as **_one-kay_** or **_one-key_**) is a simple but powerful state management library
+**Onek** (reads as **_one-kay_** or **_on-ek_**) is a simple but powerful state management library
 for **React** based on a solid foundation of functional reactive data structures from **MobX** and
 **Solid.js**, providing everything needed for managing state in complex React applications,
 all in a less than **2KB package**.
