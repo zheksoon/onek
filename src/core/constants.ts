@@ -1,6 +1,7 @@
 export const enum State {
     NOT_INITIALIZED,
     COMPUTING,
+    COMPUTING_PASSIVE,
     CLEAN,
     MAYBE_DIRTY,
     DIRTY,

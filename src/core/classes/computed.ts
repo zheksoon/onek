@@ -19,6 +19,7 @@ import { checkRevisions, notifySubscribers, subscribe, unsubscribe } from "./com
 type ComputedState =
     | State.NOT_INITIALIZED
     | State.COMPUTING
+    | State.COMPUTING_PASSIVE
     | State.CLEAN
     | State.MAYBE_DIRTY
     | State.DIRTY
@@ -30,7 +31,6 @@ export class Computed<T = any> implements IComputedImpl<T> {
     private readonly _subscribers: Set<Subscriber> = new Set();
     private readonly _subscriptions: Map<Subscription, IRevision> = new Map();
     private _state: ComputedState = State.NOT_INITIALIZED;
-    private _shouldSubscribe = true;
 
     private declare readonly _fn: () => T;
     private declare readonly _checkFn?: CheckFn<T>;
@@ -45,7 +45,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     addSubscription(subscription: Subscription): void {
-        if (this._shouldSubscribe) {
+        if (this._state !== State.COMPUTING_PASSIVE) {
             subscription._addSubscriber(this);
         }
 
@@ -113,18 +113,18 @@ export class Computed<T = any> implements IComputedImpl<T> {
             const wasInitialized = oldState !== State.NOT_INITIALIZED;
             const wasNotPassive = oldState !== State.PASSIVE;
 
-            this._shouldSubscribe = willHaveSubscriber || (wasInitialized && wasNotPassive);
+            const shouldSubscribe = willHaveSubscriber || (wasInitialized && wasNotPassive);
 
             this._subscriptions.clear();
 
-            this._state = State.COMPUTING;
+            this._state = shouldSubscribe ? State.COMPUTING : State.COMPUTING_PASSIVE;
 
             const oldSubscriber = setSubscriber(this);
 
             try {
                 const newValue = this._fn();
 
-                this._state = this._shouldSubscribe ? State.CLEAN : State.PASSIVE;
+                this._state = shouldSubscribe ? State.CLEAN : State.PASSIVE;
 
                 if (this._checkFn && wasInitialized) {
                     if (this._checkFn(this._value!, newValue)) {
@@ -157,7 +157,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     get(_subscriber = subscriber): T {
-        if (this._state === State.COMPUTING) {
+        if (this._state === State.COMPUTING || this._state === State.COMPUTING_PASSIVE) {
             throw new Error("Recursive computed call");
         }
 
