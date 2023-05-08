@@ -1,29 +1,32 @@
 import { Computed, IGettable, Observable, tx } from "onek";
 
-const GET_CONTEXT = {};
-const NOTIFY_CONTEXT = {};
+const enum GetterContext {
+    NONE,
+    INSTANCE,
+    NOTIFY,
+}
 
-let getterContext: typeof GET_CONTEXT | typeof NOTIFY_CONTEXT | null = null;
+let getterContext = GetterContext.NONE;
 let getterResult: IGettable<any> | undefined = undefined;
 
-export function from<T>(fn: () => T): IGettable<T> | undefined {
-    getterContext = GET_CONTEXT;
+export function instance<T>(fn: () => T): IGettable<T> | undefined {
+    getterContext = GetterContext.INSTANCE;
     try {
         fn();
         return getterResult;
     } finally {
-        getterContext = null;
+        getterContext = GetterContext.NONE;
         getterResult = undefined;
     }
 }
 
 export function notify(thunk: () => any): void {
-    getterContext = NOTIFY_CONTEXT;
+    getterContext = GetterContext.NOTIFY;
     tx(() => {
         try {
             thunk();
         } finally {
-            getterContext = null;
+            getterContext = GetterContext.NONE;
         }
     });
 }
@@ -47,11 +50,11 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (!getterContext) {
+                        if (getterContext === GetterContext.NONE) {
                             return prop.get();
-                        } else if (getterContext === GET_CONTEXT) {
+                        } else if (getterContext === GetterContext.INSTANCE) {
                             getterResult = prop;
-                        } else if (getterContext === NOTIFY_CONTEXT) {
+                        } else if (getterContext === GetterContext.NOTIFY) {
                             prop.notify();
                         }
                     },
@@ -65,9 +68,9 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (!getterContext) {
+                        if (getterContext === GetterContext.NONE) {
                             return prop.get();
-                        } else if (getterContext === GET_CONTEXT) {
+                        } else if (getterContext === GetterContext.INSTANCE) {
                             getterResult = prop;
                         }
                     },

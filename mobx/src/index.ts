@@ -1,1 +1,1 @@
-export { from, notify, makeObservable } from "./makeObservable";
+export { instance, notify, makeObservable } from "./makeObservable";
