@@ -6,7 +6,6 @@ import type {
     IRevision,
     ISetter,
     Subscriber,
-    SubscriberBase,
     UpdaterFn,
 } from "../types";
 import { State } from "../constants";
@@ -90,6 +89,7 @@ export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
     const set = obs.set.bind(obs) as ISetter<T>;
 
     get.instance = obs;
+    get.revision = obs.revision.bind(obs);
 
     return [get, set] as const;
 }

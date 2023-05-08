@@ -80,6 +80,8 @@ export type UpdaterFn<T> = (prevValue: T) => T;
 
 export interface IGetter<T> {
     (subscriber?: SubscriberBase): T;
+
+    revision(): IRevision;
 }
 
 export interface ISetter<T> {

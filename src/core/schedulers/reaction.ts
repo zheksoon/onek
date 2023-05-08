@@ -8,7 +8,7 @@ let reactionQueue: Array<Reaction> = [];
 let isReactionRunScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
-    Promise.resolve().then(runner);
+    Promise.resolve().then(runner, reactionExceptionHandler);
 };
 let reactionExceptionHandler = (exception: any) => {
     console.error("Reaction exception:", exception);

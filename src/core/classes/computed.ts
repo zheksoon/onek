@@ -94,10 +94,8 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     _actualizeAndRecompute(willHaveSubscriber = false): void {
-        if (this._state === State.PASSIVE) {
-            if (!checkRevisions(this._subscriptions)) {
-                return;
-            }
+        if (this._state === State.PASSIVE && !checkRevisions(this._subscriptions)) {
+            return;
         }
 
         if (this._state === State.MAYBE_DIRTY) {
@@ -209,6 +207,7 @@ export function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): ICompu
 
     get.instance = comp;
     get.destroy = comp.destroy.bind(comp);
+    get.revision = comp.revision.bind(comp);
 
     return get;
 }

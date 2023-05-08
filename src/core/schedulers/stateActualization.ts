@@ -1,4 +1,3 @@
-import { Computed } from "../classes";
 import { Subscription } from "../types";
 
 export const stateActualizationQueue: Set<Subscription> = new Set();

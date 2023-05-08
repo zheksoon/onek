@@ -10,7 +10,9 @@ export interface IObserver extends SubscriberBase {
 const isInBrowser = typeof window !== "undefined";
 
 const EMPTY_ARRAY = [] as const;
-const NOOP = () => {};
+const NOOP = () => {
+    // noop
+};
 
 const NOOP_OBSERVER: IObserver = (callback) => callback();
 NOOP_OBSERVER.addSubscription = NOOP;
