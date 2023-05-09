@@ -800,7 +800,7 @@ but still holds references to its dependencies, so it can check later if some of
 How is the change detection possible without guarantees that values stored in observables and
 computeds are immutable? The answer is simple: along with the value, observable and computed store a
 **revision** - an immutable plain object that is new each time an observable or computed is updated.
-This the implementation of `reselect`-like logic of checking computed dependencies with very small
+This allows the implementation of `reselect`-like logic of checking computed dependencies with very small
 overhead and preserve cached values without any memory leaks.
 
 ## API Documentation
