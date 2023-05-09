@@ -51,15 +51,17 @@ export function useObserver(): IObserver {
 
         return {
             _subscribe(notify: NotifyFn): UnsubscribeFn {
-                subscribers.add(notify);
+                if (!subscribers.size) {
+                    reaction.shouldSubscribe = true;
 
-                reaction.shouldSubscribe = true;
+                    reaction.subscribe();
 
-                reaction.subscribe();
-
-                if (reaction.missedRun()) {
-                    notify();
+                    if (reaction.missedRun()) {
+                        notify();
+                    }
                 }
+
+                subscribers.add(notify);
 
                 return () => {
                     subscribers.delete(notify);
