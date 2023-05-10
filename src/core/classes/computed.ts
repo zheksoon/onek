@@ -15,6 +15,7 @@ import { withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
 import { Revision } from "./revision";
 import { checkRevisions, notifySubscribers, subscribe, unsubscribe } from "./common";
+import { mergeMetadata, metadataEquals, scheduleMetadataCleanup } from "../metadata";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -31,6 +32,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     private readonly _subscribers: Set<Subscriber> = new Set();
     private readonly _subscriptions: Map<Subscription, IRevision> = new Map();
     private _state: ComputedState = State.NOT_INITIALIZED;
+    private _metadata: any = undefined;
 
     private declare readonly _fn: () => T;
     private declare readonly _checkFn?: CheckFn<T>;
@@ -71,26 +73,28 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
     }
 
-    _notify(state: NotifyState, subscription: Subscription) {
+    _cleanMetadata(): void {
+        this._metadata = undefined;
+    }
+
+    _notify(state: NotifyState, subscription: Subscription, metadata: any) {
         const oldState = this._state;
+        const oldMetadata = this._metadata;
 
-        if (oldState === state) {
-            return;
-        }
+        this._metadata = mergeMetadata(oldMetadata, metadata);
 
-        if (this._checkFn) {
-            if (oldState === State.CLEAN) {
-                this._notifySubscribers(State.MAYBE_DIRTY);
+        scheduleMetadataCleanup(this);
+
+        if (oldState === state || oldState === State.DIRTY) {
+            if (metadataEquals(oldMetadata, this._metadata)) {
+                return;
             }
-        } else {
-            this._notifySubscribers(state);
         }
 
+        const subscribersState = this._checkFn ? State.MAYBE_DIRTY : state;
+
+        this._notifySubscribers(subscribersState);
         this._state = state;
-
-        if (state === State.DIRTY) {
-            this._unsubscribe();
-        }
     }
 
     _actualizeAndRecompute(willHaveSubscriber = false): void {
@@ -115,6 +119,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
             const shouldSubscribe = willHaveSubscriber || (wasInitialized && wasNotPassive);
 
+            this._unsubscribe();
             this._subscriptions.clear();
 
             this._state = shouldSubscribe ? State.COMPUTING : State.COMPUTING_PASSIVE;
@@ -187,7 +192,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     private _notifySubscribers(state: NotifyState): void {
-        notifySubscribers(this._subscribers, state, this);
+        notifySubscribers(this._subscribers, state, this, this._metadata);
     }
 
     private _passivate(): void {

@@ -48,7 +48,7 @@ export interface IComputedImpl<T = any> extends IComputed<T>, SubscriberBase {
 
     _checkSubscribersAndPassivate(): void;
 
-    _notify(state: NotifyState, subscription: Subscription): void;
+    _notify(state: NotifyState, subscription: Subscription, metadata: any): void;
 
     _actualizeAndRecompute(willHaveSubscriber?: boolean): void;
 }
@@ -70,7 +70,7 @@ export interface IReaction {
 }
 
 export interface IReactionImpl extends IReaction, SubscriberBase {
-    _notify(state: NotifyState, subscription: Subscription): void;
+    _notify(state: NotifyState, subscription: Subscription, metadata: any): void;
 
     _runManager(): void;
 }

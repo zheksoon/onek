@@ -30,5 +30,6 @@ export {
     configure,
     shallowEquals,
     setSubscriber,
+    withMetadata,
 } from "./core";
 export { useObserver, IObserver } from "./react";

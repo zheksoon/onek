@@ -15,6 +15,7 @@ import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
 import { notifySubscribers } from "./common";
+import { currentMetadata, defaultMetadata } from "../metadata";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = new Revision();
@@ -78,7 +79,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
     notify(): void {
         this._revision = new Revision();
 
-        notifySubscribers(this._subscribers, State.DIRTY, this);
+        notifySubscribers(this._subscribers, State.DIRTY, this, currentMetadata ?? defaultMetadata);
         endTx();
     }
 }

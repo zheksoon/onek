@@ -32,9 +32,10 @@ export function subscribe(
 export function notifySubscribers(
     subscribers: Set<Subscriber>,
     state: NotifyState,
-    self: Subscription
+    self: Subscription,
+    metadata: any
 ): void {
     subscribers.forEach((subscriber) => {
-        subscriber._notify(state, self);
+        subscriber._notify(state, self, metadata);
     });
 }

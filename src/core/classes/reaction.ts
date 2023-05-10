@@ -11,6 +11,7 @@ import { State } from "../constants";
 import { scheduleReaction, scheduleStateActualization } from "../schedulers";
 import { utx } from "../transaction";
 import { checkRevisions, subscribe, unsubscribe } from "./common";
+import { mergeMetadata } from "../metadata";
 
 type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
@@ -20,8 +21,9 @@ export class Reaction implements IReactionImpl {
     private _subscriptions: Map<Subscription, IRevision> = new Map();
     private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
+    private _metadata: any = undefined;
 
-    constructor(private _fn: ReactionFn, private _manager?: () => void) {}
+    constructor(private _fn: ReactionFn, private _manager?: (metadata: any) => void) {}
 
     addSubscription(subscription: Subscription): void {
         if (this.shouldSubscribe) {
@@ -31,13 +33,25 @@ export class Reaction implements IReactionImpl {
         this._subscriptions.set(subscription, subscription.revision());
     }
 
-    _notify(state: NotifyState, subscription: Subscription): void {
+    _notify(state: NotifyState, subscription: Subscription, metadata: any): void {
         if (state === State.MAYBE_DIRTY) {
             scheduleStateActualization(subscription);
-        } else if (this._state === State.CLEAN) {
-            this._state = State.DIRTY;
-            scheduleReaction(this);
+        } else {
+            this._metadata = mergeMetadata(this._metadata, metadata);
+
+            if (this._state === State.CLEAN) {
+                this._state = State.DIRTY;
+                scheduleReaction(this);
+            }
         }
+    }
+
+    setMetadata(metadata: any): void {
+        this._metadata = metadata;
+    }
+
+    _cleanMetadata(): void {
+        this._metadata = undefined;
     }
 
     _runManager(): void {
@@ -46,7 +60,7 @@ export class Reaction implements IReactionImpl {
         }
 
         if (this._manager) {
-            this._manager();
+            this._manager(this._metadata);
         } else {
             this.run();
         }

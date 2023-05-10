@@ -3,6 +3,7 @@ import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck, subscribersCheckQueue } from "./subscribersCheck";
 import { runStateActualization, stateActualizationQueue } from "./stateActualization";
+import { runComputedMetadataCleanup } from "../metadata";
 
 let reactionQueue: Array<Reaction> = [];
 let isReactionRunScheduled = false;
@@ -32,6 +33,7 @@ function runReactions(): void {
         let i = MAX_REACTION_ITERATIONS;
         while (reactionQueue.length || stateActualizationQueue.size) {
             runStateActualization();
+            runComputedMetadataCleanup();
 
             while (reactionQueue.length && --i) {
                 const reactions = reactionQueue;
