@@ -39,29 +39,31 @@ export function useObserver({ startTransitionOn }: UseObserverParams): IObserver
         return NOOP_OBSERVER;
     }
 
-    const startTransitionObservables = startTransitionOn
-        ? useMemo(() => {
-              return startTransitionOn.map((observable) => {
-                  if (observable instanceof Observable || observable instanceof Computed) {
-                      return observable;
-                  } else if (typeof observable === "function" && observable.instance) {
-                      return observable.instance;
-                  } else {
-                      throw new Error(
-                          "Observable in 'startTransitionOn' is not getter or instance"
-                      );
-                  }
-              });
-          }, startTransitionOn)
-        : [];
+    const startTransitionEnabled = !!startTransitionOn && startTransitionOn.length > 0;
 
-    const startTransitionObservablesRef = useRef(startTransitionObservables);
+    const startTransitionObservablesRef = useRef<Array<IGettable<any>> | null>(null);
 
-    startTransitionObservablesRef.current = startTransitionObservables;
+    let setStartTransition: ((revision: Revision) => void) | null = null;
+    let isPending = false;
+    let startTransition: ((callback: () => void) => void) | null = null;
 
-    const [, setStartTransition] = useState(new Revision());
+    if (startTransitionEnabled) {
+        startTransitionObservablesRef.current = useMemo(() => {
+            return startTransitionOn.map((observable) => {
+                if (observable instanceof Observable || observable instanceof Computed) {
+                    return observable;
+                } else if (typeof observable === "function" && observable.instance) {
+                    return observable.instance;
+                } else {
+                    throw new Error("Observable in 'startTransitionOn' is not getter or instance");
+                }
+            });
+        }, startTransitionOn);
 
-    const [isPending, startTransition] = useTransition();
+        [, setStartTransition] = useState(new Revision());
+
+        [isPending, startTransition] = useTransition();
+    }
 
     const store = useMemo(() => {
         let revision = new Revision();
@@ -70,26 +72,33 @@ export function useObserver({ startTransitionOn }: UseObserverParams): IObserver
         const reaction = new Reaction(NOOP, () => {
             revision = new Revision();
 
-            const transitionObservables = startTransitionObservablesRef.current;
-            const changedSubscriptions = reaction._changedSubscriptions as Set<IGettable<any>>;
+            if (startTransitionEnabled) {
+                const transitionObservables = startTransitionObservablesRef.current;
+                const changedSubscriptions = reaction._changedSubscriptions as Set<IGettable<any>>;
 
-            const transitionSubscriptions = transitionObservables.filter((observable) =>
-                changedSubscriptions.has(observable)
-            );
+                const transitionSubscriptions = transitionObservables!.filter((observable) =>
+                    changedSubscriptions.has(observable)
+                );
 
-            const transitionSubscriptionsCount = transitionSubscriptions.length;
+                const transitionSubscriptionsCount = transitionSubscriptions.length;
 
-            if (transitionSubscriptionsCount) {
-                startTransition(() => {
-                    setStartTransition(new Revision());
-                });
+                // in case there are some non-transition changes, run immediate notification
+                if (transitionSubscriptionsCount < changedSubscriptions.size) {
+                    subscribers.forEach((notify) => {
+                        notify();
+                    });
+                } else {
+                    startTransition!(() => {
+                        setStartTransition!(new Revision());
+                    });
+                }
+
+                return;
             }
 
-            if (transitionSubscriptionsCount < changedSubscriptions.size) {
-                subscribers.forEach((notify) => {
-                    notify();
-                });
-            }
+            subscribers.forEach((notify) => {
+                notify();
+            });
         });
 
         reaction.shouldSubscribe = false;
