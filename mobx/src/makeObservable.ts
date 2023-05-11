@@ -7,26 +7,40 @@ const enum GetterContext {
 }
 
 let getterContext = GetterContext.NONE;
-let getterResult: IGettable<any> | undefined = undefined;
 
-export function instance<T>(fn: () => T): IGettable<T> | undefined {
+function handleContext(prop: IGettable<any>): any {
+    switch (getterContext) {
+        case GetterContext.NONE:
+            return prop.get();
+        case GetterContext.INSTANCE:
+            return prop;
+        case GetterContext.NOTIFY:
+            if (prop instanceof Observable) {
+                prop.notify();
+            }
+            return;
+    }
+}
+
+export function instance<T>(fn: () => T): T extends any[] ? IGettable<any>[] : IGettable<T> {
+    const oldContext = getterContext;
     getterContext = GetterContext.INSTANCE;
     try {
-        fn();
-        return getterResult;
+        // @ts-ignore
+        return fn();
     } finally {
-        getterContext = GetterContext.NONE;
-        getterResult = undefined;
+        getterContext = oldContext;
     }
 }
 
 export function notify(thunk: () => any): void {
+    const oldContext = getterContext;
     getterContext = GetterContext.NOTIFY;
     tx(() => {
         try {
             thunk();
         } finally {
-            getterContext = GetterContext.NONE;
+            getterContext = oldContext;
         }
     });
 }
@@ -50,13 +64,7 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (getterContext === GetterContext.NONE) {
-                            return prop.get();
-                        } else if (getterContext === GetterContext.INSTANCE) {
-                            getterResult = prop;
-                        } else if (getterContext === GetterContext.NOTIFY) {
-                            prop.notify();
-                        }
+                        return handleContext(prop);
                     },
                     set(value: any) {
                         prop.set(value);
@@ -68,11 +76,7 @@ export function makeObservable<T extends {}>(obj: T): T {
                     enumerable: true,
                     configurable: true,
                     get() {
-                        if (getterContext === GetterContext.NONE) {
-                            return prop.get();
-                        } else if (getterContext === GetterContext.INSTANCE) {
-                            getterResult = prop;
-                        }
+                        return handleContext(prop);
                     },
                 });
             }

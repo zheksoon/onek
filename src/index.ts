@@ -31,4 +31,4 @@ export {
     shallowEquals,
     setSubscriber,
 } from "./core";
-export { useObserver, IObserver } from "./react";
+export { useObservable, useComputed, useReaction, useObserver, IObserver } from "./react";

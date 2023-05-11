@@ -1,4 +1,4 @@
-import { computed, configure, Observable, observable, Reaction, tx } from "onek";
+import { computed, configure, IGettable, Observable, observable, Reaction, tx } from "onek";
 import { instance, makeObservable, notify } from "../src";
 
 const trackedUpdatesCounter = new WeakMap();
@@ -198,55 +198,29 @@ describe("instance", () => {
     });
 
     test("instance() returns observable or computed instance accessed on thunk fn", () => {
-        const o = observable.prop(1);
-        const c = computed.prop(() => o + 1);
+        const o = observable.prop(1) as unknown as IGettable<number>;
+        const c = computed.prop(() => o.get() + 1) as unknown as IGettable<number>;
 
         const obj = makeObservable({
             o,
             c,
         });
 
-        expect(
-            instance(() => {
-                obj.o;
-            })
-        ).toBe(o);
-        expect(
-            instance(() => {
-                obj.c;
-            })
-        ).toBe(c);
+        expect(instance(() => obj.o)).toBe(o);
+        expect(instance(() => obj.c)).toBe(c);
     });
 
-    test("instance() returns observable or computed instance accessed on thunk fn (makeObservable)", () => {
-        const o = observable.box(1);
-        const c = computed.box(() => o.get() + 1);
-        const oo = makeObservable({ o, c });
-        expect(
-            instance(() => {
-                oo.o;
-            })
-        ).toBe(o);
-        expect(
-            instance(() => {
-                oo.c;
-            })
-        ).toBe(c);
-    });
-
-    test("instance() returns latest accessed observable in thunk fn", () => {
-        const o1 = observable.prop(1);
-        const o2 = observable.prop(2);
+    test("instance() returns result of fn with instances", () => {
+        const o1 = observable.prop(1) as unknown as IGettable<number>;
+        const o2 = observable.prop(2) as unknown as IGettable<number>;
+        const c1 = computed.prop(() => o1.get() + o2.get()) as unknown as IGettable<number>;
 
         const obj = makeObservable({
             o1,
             o2,
+            c1,
         });
-        expect(
-            instance(() => {
-                obj.o1;
-                obj.o2;
-            })
-        ).toBe(o2);
+
+        expect(instance(() => [obj.o1, obj.o2, obj.c1])).toEqual([o1, o2, c1]);
     });
 });

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import {
     Computed,
     IGettable,
@@ -13,8 +13,8 @@ import {
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
-type UseObserverParams = {
-    startTransitionOn?: Array<IGetter<any> | IGettable<any>>;
+type UseObserverOptions = {
+    startTransition?: Array<IGetter<any> | IGettable<any>>;
 };
 
 export interface IObserver extends SubscriberBase {
@@ -34,35 +34,66 @@ const NOOP_OBSERVER: IObserver = (callback) => callback();
 NOOP_OBSERVER.addSubscription = NOOP;
 NOOP_OBSERVER.isPending = false;
 
-export function useObserver({ startTransitionOn }: UseObserverParams): IObserver {
+export function useObserver(options?: UseObserverOptions): IObserver {
     if (!isInBrowser) {
         return NOOP_OBSERVER;
     }
 
-    const startTransitionEnabled = !!startTransitionOn && startTransitionOn.length > 0;
+    const startTransitionEnabled =
+        options && options.startTransition && options.startTransition.length > 0;
 
-    const startTransitionObservablesRef = useRef<Array<IGettable<any>> | null>(null);
-
-    let setStartTransition: ((revision: Revision) => void) | null = null;
     let isPending = false;
-    let startTransition: ((callback: () => void) => void) | null = null;
+
+    let notifyChanged: (reaction: Reaction, subscribers: Set<NotifyFn>) => void;
 
     if (startTransitionEnabled) {
+        const { startTransition } = options;
+
+        const startTransitionObservablesRef = useRef<Array<IGettable<any>>>();
+
         startTransitionObservablesRef.current = useMemo(() => {
-            return startTransitionOn.map((observable) => {
+            return startTransition!.map((observable) => {
                 if (observable instanceof Observable || observable instanceof Computed) {
                     return observable;
                 } else if (typeof observable === "function" && observable.instance) {
                     return observable.instance;
                 } else {
-                    throw new Error("Observable in 'startTransitionOn' is not getter or instance");
+                    throw new Error("Observable in 'startTransition' is not getter or instance");
                 }
             });
-        }, startTransitionOn);
+        }, startTransition);
 
-        [, setStartTransition] = useState(new Revision());
+        const [, setStartTransition] = useState(new Revision());
 
-        [isPending, startTransition] = useTransition();
+        const [isTransitionPending, _startTransition] = useTransition();
+
+        notifyChanged = useCallback((reaction: Reaction, subscribers: Set<NotifyFn>) => {
+            const transitionObservables = startTransitionObservablesRef.current!;
+            const changedSubscriptions = reaction._changedSubscriptions as Set<IGettable<any>>;
+
+            const transitionSubscriptionsCount = transitionObservables.reduce((acc, observable) => {
+                return acc + (changedSubscriptions.has(observable) ? 1 : 0);
+            }, 0);
+
+            // in case there are some non-transition changes, run immediate notification
+            if (transitionSubscriptionsCount < changedSubscriptions.size) {
+                subscribers.forEach((notify) => {
+                    notify();
+                });
+            } else {
+                _startTransition(() => {
+                    setStartTransition(new Revision());
+                });
+            }
+        }, EMPTY_ARRAY);
+
+        isPending = isTransitionPending;
+    } else {
+        notifyChanged = useCallback((reaction: Reaction, subscribers: Set<NotifyFn>) => {
+            subscribers.forEach((notify) => {
+                notify();
+            });
+        }, EMPTY_ARRAY);
     }
 
     const store = useMemo(() => {
@@ -72,33 +103,7 @@ export function useObserver({ startTransitionOn }: UseObserverParams): IObserver
         const reaction = new Reaction(NOOP, () => {
             revision = new Revision();
 
-            if (startTransitionEnabled) {
-                const transitionObservables = startTransitionObservablesRef.current;
-                const changedSubscriptions = reaction._changedSubscriptions as Set<IGettable<any>>;
-
-                const transitionSubscriptions = transitionObservables!.filter((observable) =>
-                    changedSubscriptions.has(observable)
-                );
-
-                const transitionSubscriptionsCount = transitionSubscriptions.length;
-
-                // in case there are some non-transition changes, run immediate notification
-                if (transitionSubscriptionsCount < changedSubscriptions.size) {
-                    subscribers.forEach((notify) => {
-                        notify();
-                    });
-                } else {
-                    startTransition!(() => {
-                        setStartTransition!(new Revision());
-                    });
-                }
-
-                return;
-            }
-
-            subscribers.forEach((notify) => {
-                notify();
-            });
+            notifyChanged(reaction, subscribers);
         });
 
         reaction.shouldSubscribe = false;
