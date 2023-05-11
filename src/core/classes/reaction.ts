@@ -16,6 +16,7 @@ type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
 export class Reaction implements IReactionImpl {
     public shouldSubscribe = true;
+    public _changedSubscriptions = new Set<Subscription>();
 
     private _subscriptions: Map<Subscription, IRevision> = new Map();
     private _destructor: Destructor = null;
@@ -34,9 +35,13 @@ export class Reaction implements IReactionImpl {
     _notify(state: NotifyState, subscription: Subscription): void {
         if (state === State.MAYBE_DIRTY) {
             scheduleStateActualization(subscription);
-        } else if (this._state === State.CLEAN) {
-            this._state = State.DIRTY;
-            scheduleReaction(this);
+        } else {
+            this._changedSubscriptions.add(subscription);
+
+            if (this._state === State.CLEAN) {
+                this._state = State.DIRTY;
+                scheduleReaction(this);
+            }
         }
     }
 
@@ -63,6 +68,7 @@ export class Reaction implements IReactionImpl {
     unsubscribeAndCleanup(): void {
         this.unsubscribe();
         this._subscriptions.clear();
+        this._changedSubscriptions.clear();
         this._destructor && this._destructor();
         this._destructor = null;
         this._state = State.CLEAN;

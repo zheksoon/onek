@@ -82,6 +82,8 @@ export interface IGetter<T> {
     (subscriber?: SubscriberBase): T;
 
     revision(): IRevision;
+
+    instance: IGettable<T>;
 }
 
 export interface ISetter<T> {
