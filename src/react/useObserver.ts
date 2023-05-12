@@ -14,7 +14,7 @@ type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
 type UseObserverOptions = {
-    startTransition?: Array<IGetter<any> | IGettable<any>>;
+    startTransition?: boolean | Array<IGetter<any> | IGettable<any>>;
 };
 
 export interface IObserver extends SubscriberBase {
@@ -39,29 +39,32 @@ export function useObserver(options?: UseObserverOptions): IObserver {
         return NOOP_OBSERVER;
     }
 
-    const startTransitionEnabled =
-        options && options.startTransition && options.startTransition.length > 0;
+    const startTransition = options && options.startTransition;
 
     let isPending = false;
 
     let notifyChanged: (reaction: Reaction, subscribers: Set<NotifyFn>) => void;
 
-    if (startTransitionEnabled) {
-        const { startTransition } = options;
+    if (startTransition) {
+        const transitionEverything = startTransition === true;
 
-        const startTransitionObservablesRef = useRef<Array<IGettable<any>>>();
+        const startTransitionObservablesRef = useRef<Array<IGettable<any>>>([]);
 
-        startTransitionObservablesRef.current = useMemo(() => {
-            return startTransition!.map((observable) => {
-                if (observable instanceof Observable || observable instanceof Computed) {
-                    return observable;
-                } else if (typeof observable === "function" && observable.instance) {
-                    return observable.instance;
-                } else {
-                    throw new Error("Observable in 'startTransition' is not getter or instance");
-                }
-            });
-        }, startTransition);
+        if (!transitionEverything) {
+            startTransitionObservablesRef.current = useMemo(() => {
+                return startTransition!.map((observable) => {
+                    if (observable instanceof Observable || observable instanceof Computed) {
+                        return observable;
+                    } else if (typeof observable === "function" && observable.instance) {
+                        return observable.instance;
+                    } else {
+                        throw new Error(
+                            "Observable in 'startTransition' is not getter or instance"
+                        );
+                    }
+                });
+            }, startTransition);
+        }
 
         const [, setStartTransition] = useState(new Revision());
 
@@ -75,14 +78,17 @@ export function useObserver(options?: UseObserverOptions): IObserver {
                 return acc + (changedSubscriptions.has(observable) ? 1 : 0);
             }, 0);
 
-            // in case there are some non-transition changes, run immediate notification
-            if (transitionSubscriptionsCount < changedSubscriptions.size) {
-                subscribers.forEach((notify) => {
-                    notify();
-                });
-            } else {
+            if (
+                transitionEverything ||
+                transitionSubscriptionsCount === changedSubscriptions.size
+            ) {
                 _startTransition(() => {
                     setStartTransition(new Revision());
+                });
+            } else {
+                // in case there are some non-transition changes, run immediate notification
+                subscribers.forEach((notify) => {
+                    notify();
                 });
             }
         }, EMPTY_ARRAY);
