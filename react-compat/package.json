@@ -1,15 +1,15 @@
 {
-    "name": "@onek/compat",
+    "name": "@onek/react-compat",
     "version": "0.1.0",
     "main": "dist/index.js",
     "source": "src/index.ts",
     "umd:main": "./dist/index.umd.js",
     "module": "dist/index.module.js",
     "unpkg": "./dist/index.umd.js",
-    "types": "./types/index.d.ts",
+    "types": "./dist/types/index.d.ts",
     "exports": {
         ".": {
-            "types": "./types/index.d.ts",
+            "types": "./dist/types/index.d.ts",
             "browser": "./dist/index.module.js",
             "umd": "./dist/index.umd.js",
             "import": "./dist/index.mjs",
@@ -22,7 +22,9 @@
     },
     "devDependencies": {
         "@types/react": ">=16.8.0",
-        "onek": "link:../"
+        "onek": "link:../",
+        "onek-react": "link:../react",
+        "react": ">=16.8.0"
     },
     "minify": {
         "mangle": {

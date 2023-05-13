@@ -14,13 +14,12 @@ let reactionExceptionHandler = (exception: any) => {
     console.error("Reaction exception:", exception);
 };
 
-export function configure(options: IOptions) {
-    if (options.reactionScheduler !== undefined) {
-        reactionScheduler = options.reactionScheduler;
-    }
-    if (options.reactionExceptionHandler !== undefined) {
-        reactionExceptionHandler = options.reactionExceptionHandler;
-    }
+export function setReactionScheduler(scheduler: typeof reactionScheduler) {
+    reactionScheduler = scheduler;
+}
+
+export function setReactionExceptionHandler(handler: typeof reactionExceptionHandler) {
+    reactionExceptionHandler = handler;
 }
 
 export function scheduleReaction(reaction: Reaction) {

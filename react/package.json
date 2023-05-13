@@ -1,5 +1,5 @@
 {
-    "name": "@onek/mobx",
+    "name": "@onek/react",
     "version": "0.1.0",
     "main": "dist/index.js",
     "source": "src/index.ts",
@@ -17,10 +17,13 @@
         }
     },
     "peerDependencies": {
-        "onek": "*"
+        "onek": "*",
+        "react": ">=18.0.0"
     },
     "devDependencies": {
-        "onek": "link:../"
+        "@types/react": ">=18.0.0",
+        "onek": "link:../",
+        "react": ">=18.0.0"
     },
     "minify": {
         "mangle": {

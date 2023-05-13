@@ -5,15 +5,16 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@onek/compat@workspace:.":
+"@onek/react@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@onek/compat@workspace:."
+  resolution: "@onek/react@workspace:."
   dependencies:
-    "@types/react": ">=16.8.0"
+    "@types/react": ">=18.0.0"
     onek: "link:../"
+    react: ">=18.0.0"
   peerDependencies:
     onek: "*"
-    react: ">=16.8.0"
+    react: ">=18.0.0"
   languageName: unknown
   linkType: soft
 
@@ -24,7 +25,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:>=16.8.0":
+"@types/react@npm:>=18.0.0":
   version: 18.2.6
   resolution: "@types/react@npm:18.2.6"
   dependencies:
@@ -49,8 +50,35 @@ __metadata:
   languageName: node
   linkType: hard
 
-"onek@link:../::locator=%40onek%2Fcompat%40workspace%3A.":
+"js-tokens@npm:^3.0.0 || ^4.0.0":
+  version: 4.0.0
+  resolution: "js-tokens@npm:4.0.0"
+  checksum: 8a95213a5a77deb6cbe94d86340e8d9ace2b93bc367790b260101d2f36a2eaf4e4e22d9fa9cf459b38af3a32fb4190e638024cf82ec95ef708680e405ea7cc78
+  languageName: node
+  linkType: hard
+
+"loose-envify@npm:^1.1.0":
+  version: 1.4.0
+  resolution: "loose-envify@npm:1.4.0"
+  dependencies:
+    js-tokens: ^3.0.0 || ^4.0.0
+  bin:
+    loose-envify: cli.js
+  checksum: 6517e24e0cad87ec9888f500c5b5947032cdfe6ef65e1c1936a0c48a524b81e65542c9c3edc91c97d5bddc806ee2a985dbc79be89215d613b1de5db6d1cfe6f4
+  languageName: node
+  linkType: hard
+
+"onek@link:../::locator=%40onek%2Freact%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "onek@link:../::locator=%40onek%2Fcompat%40workspace%3A."
+  resolution: "onek@link:../::locator=%40onek%2Freact%40workspace%3A."
   languageName: node
   linkType: soft
+
+"react@npm:>=18.0.0":
+  version: 18.2.0
+  resolution: "react@npm:18.2.0"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
+  languageName: node
+  linkType: hard

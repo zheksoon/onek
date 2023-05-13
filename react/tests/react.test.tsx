@@ -4,7 +4,8 @@
 
 import * as React from "react";
 import { render } from "@testing-library/react";
-import { computed, observable, useObserver } from "../src";
+import { computed, observable } from "onek";
+import { useObserver } from "../src";
 
 describe("useObserver", () => {
     it("returns wrapper function that returns result of thunk", async () => {

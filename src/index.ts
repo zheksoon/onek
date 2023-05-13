@@ -12,6 +12,7 @@ export type {
     ISetter,
     IOptions,
     Disposer,
+    ReactionFn,
     SubscriberBase,
 } from "./core/types";
 export {
@@ -31,4 +32,3 @@ export {
     shallowEquals,
     setSubscriber,
 } from "./core";
-export { useObserver, IObserver } from "./react";

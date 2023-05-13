@@ -11,24 +11,31 @@
     "umd:main": "./dist/onek.umd.js",
     "module": "dist/onek.module.js",
     "unpkg": "./dist/onek.umd.js",
-    "types": "./types/index.d.ts",
+    "types": "./dist/types/index.d.ts",
     "exports": {
         ".": {
-            "types": "./types/index.d.ts",
+            "types": "./dist/types/index.d.ts",
             "browser": "./dist/onek.module.js",
             "umd": "./dist/onek.umd.js",
             "import": "./dist/onek.mjs",
             "require": "./dist/onek.js"
         },
-        "./compat": {
-            "types": "./compat/types/index.d.ts",
-            "browser": "./compat/dist/index.module.js",
-            "umd": "./compat/dist/index.umd.js",
-            "import": "./compat/dist/index.mjs",
-            "require": "./compat/dist/index.js"
+        "./react": {
+            "types": "./react/dist/types/index.d.ts",
+            "browser": "./react/dist/index.module.js",
+            "umd": "./react/dist/index.umd.js",
+            "import": "./react/dist/index.mjs",
+            "require": "./react/dist/index.js"
+        },
+        "./react-compat": {
+            "types": "./react-compat/dist/types/index.d.ts",
+            "browser": "./react-compat/dist/index.module.js",
+            "umd": "./react-compat/dist/index.umd.js",
+            "import": "./react-compat/dist/index.mjs",
+            "require": "./react-compat/dist/index.js"
         },
         "./mobx": {
-            "types": "./mobx/types/index.d.ts",
+            "types": "./mobx/dist/types/index.d.ts",
             "browser": "./mobx/dist/index.module.js",
             "umd": "./mobx/dist/index.umd.js",
             "import": "./mobx/dist/index.mjs",
@@ -37,15 +44,13 @@
     },
     "packageManager": "yarn@3.5.0",
     "scripts": {
-        "build": "yarn run build:onek && yarn run build:compat && yarn run build:mobx",
-        "build:full": "yarn run build:onek --no-compress && yarn run build:compat --no-compress && yarn run build:mobx --no-compress",
+        "build": "yarn run build:onek && yarn run build:react && yarn run build:react-compat && yarn run build:mobx",
+        "build:full": "yarn run build:onek --no-compress && yarn run build:react --no-compress && yarn run build:react-compat --no-compress && yarn run build:mobx --no-compress",
         "build:onek": "yarn exec microbundle",
-        "build:compat": "cd ./compat && yarn exec microbundle --external='onek'",
+        "build:react": "cd react && yarn exec microbundle --external='onek'",
+        "build:react-compat": "cd react-compat && yarn exec microbundle --external='onek'",
         "build:mobx": "cd ./mobx && yarn exec microbundle --external='onek'",
         "test": "node --expose-gc $(yarn bin jest)"
-    },
-    "peerDependencies": {
-        "react": ">=18.0.0"
     },
     "devDependencies": {
         "@testing-library/react": "^14.0.0",
@@ -61,18 +66,21 @@
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
         "react-test-renderer": "^18.2.0",
-        "ts-jest": "^29.0.5",
+        "ts-jest": "latest",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.0"
     },
     "files": [
         "dist/",
-        "types/",
-        "compat/dist/",
-        "compat/types/",
-        "compat/package.json",
+        "src/",
+        "react/dist/",
+        "react/src",
+        "react/package.json",
+        "react-compat/dist/",
+        "react-compat/src",
+        "react-compat/package.json",
         "mobx/dist/",
-        "mobx/types/",
+        "mobx/src",
         "mobx/package.json",
         "LICENSE",
         "README.md",

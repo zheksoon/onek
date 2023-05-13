@@ -8,7 +8,7 @@
         "strict": true,
         "moduleDetection": "force",
         "declaration": true,
-        "declarationDir": "./types"
+        "declarationDir": "./dist/types"
     },
     "include": [
         "./src/**/*"

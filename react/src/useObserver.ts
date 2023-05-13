@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction, Revision, setSubscriber, SubscriberBase } from "../core";
+import { Reaction, Revision, setSubscriber, SubscriberBase } from "onek";
 
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;

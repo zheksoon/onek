@@ -4,7 +4,8 @@
 
 import * as React from "react";
 import { renderToString } from "react-dom/server";
-import { observable, useObserver } from "../src";
+import { observable } from "onek";
+import { useObserver } from "../src";
 
 describe("non-browser environment", () => {
     it("returns noop wrapper", () => {
