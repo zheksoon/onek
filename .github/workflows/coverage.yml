@@ -16,7 +16,7 @@ jobs:
         node-version: 18
 
     - name: Install dependencies
-      run: yarn
+      run: yarn && cd ./react && yarn && cd ../react-compat && yarn && cd ../mobx && yarn
 
     - name: Build
       run: yarn build
