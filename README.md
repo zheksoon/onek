@@ -812,10 +812,10 @@ Here are some general interfaces used in the following documentation:
 ```ts
 import { ComputedImpl, ObservableImpl } from "./types";
 
-type Subscriber = ComputedImpl | ReactionImpl;
+type ISubscriber = ComputedImpl | ReactionImpl;
 
 interface Getter<T> {
-  (subscriber?: Subscriber): T;
+  (subscriber?: ISubscriber): T;
 }
 
 interface ObservableGetter<T> extends Getter<T> {
@@ -849,7 +849,7 @@ Creates a getter and setter for reactive value. The `value` argument is the valu
 observable instance, and the `checkFn`
 is a function that's used for checking if the new value from the setter is the same as the old one.
 
-The getter is a function that can accept a `Subscriber` - return value of `useObserver` hook or the
+The getter is a function that can accept a `ISubscriber` - return value of `useObserver` hook or the
 value of `instance`attribute of a computed getter.
 
 The setter function can accept a `value` argument that can be of a generic type or an updater
@@ -912,7 +912,7 @@ function untracked<Args extends any[], T>(
 ### useObserver
 
 ```ts
-function useObserver(): Subscriber | undefined;
+function useObserver(): ISubscriber | undefined;
 ```
 
 ### shallowEquals

@@ -10,20 +10,19 @@ export function useTransitionObserver<T>(fn: () => T) {
 
     let value: T;
 
-    const isValueInitialized = useRef(false);
-
     const r = useMemo(() => {
-        const reaction = new Reaction(() => {
-            value = fnRef.current();
+        const reaction = new Reaction(
+            () => {
+                value = fnRef.current();
+            },
+            () => {
+                reaction.run();
 
-            if (isValueInitialized.current) {
                 startTransition(() => {
                     setTransitionValue(value!);
                 });
-            } else {
-                isValueInitialized.current = true;
             }
-        });
+        );
 
         reaction.shouldSubscribe = false;
 
@@ -34,7 +33,7 @@ export function useTransitionObserver<T>(fn: () => T) {
         r.shouldSubscribe = true;
 
         if (r.missedRun()) {
-            r.run();
+            r.runManager();
         } else {
             r.subscribe();
         }
@@ -45,11 +44,11 @@ export function useTransitionObserver<T>(fn: () => T) {
         };
     }, [r]);
 
-    if (!isValueInitialized.current) {
+    const [transitionValue, setTransitionValue] = useState<T>(() => {
         r.run();
-    }
 
-    const [transitionValue, setTransitionValue] = useState<T>(value!);
+        return value;
+    });
 
     return [isPending, transitionValue] as const;
 }

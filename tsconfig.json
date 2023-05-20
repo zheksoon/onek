@@ -1,14 +1,13 @@
 {
     "compilerOptions": {
         "baseUrl": ".",
+        "rootDir": "./src",
         "esModuleInterop": true,
         "moduleResolution": "node",
         "target": "ESNext",
-        "module": "commonjs",
+        "module": "ESNext",
         "strict": true,
-        "moduleDetection": "force",
         "declaration": true,
-        "declarationDir": "./dist/types",
         "jsx": "react"
     },
     "include": [
@@ -16,6 +15,10 @@
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "react",
+        "react-compat",
+        "mobx",
+        "dist",
+        "tests"
     ]
 }

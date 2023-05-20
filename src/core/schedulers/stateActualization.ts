@@ -1,14 +1,14 @@
-import { Subscription } from "../types";
+import { ISubscription } from "../types";
 
-export const stateActualizationQueue: Set<Subscription> = new Set();
+export const actualizationQueue: Set<ISubscription> = new Set();
 
-export function scheduleStateActualization(computed: Subscription) {
-    stateActualizationQueue.add(computed);
+export function scheduleActualization(computed: ISubscription) {
+    actualizationQueue.add(computed);
 }
 
-export function runStateActualization() {
-    stateActualizationQueue.forEach((computed) => {
-        computed._actualizeAndRecompute();
+export function runActualizations() {
+    actualizationQueue.forEach((computed) => {
+        computed._actualize(false);
     });
-    stateActualizationQueue.clear();
+    actualizationQueue.clear();
 }

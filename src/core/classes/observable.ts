@@ -5,7 +5,7 @@ import type {
     IObservableImpl,
     IRevision,
     ISetter,
-    Subscriber,
+    ISubscriber,
     UpdaterFn,
 } from "../types";
 import { State } from "../constants";
@@ -18,7 +18,7 @@ import { notifySubscribers } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = new Revision();
-    private _subscribers: Set<Subscriber> = new Set();
+    private _subscribers: Set<ISubscriber> = new Set();
 
     private declare _value: T;
     private declare readonly _checkFn?: CheckFn<T>;
@@ -32,15 +32,15 @@ export class Observable<T = any> implements IObservableImpl<T> {
             : undefined;
     }
 
-    _addSubscriber(subscriber: Subscriber): void {
+    _addSubscriber(subscriber: ISubscriber): void {
         this._subscribers.add(subscriber);
     }
 
-    _removeSubscriber(subscriber: Subscriber): void {
+    _removeSubscriber(subscriber: ISubscriber): void {
         this._subscribers.delete(subscriber);
     }
 
-    _actualizeAndRecompute(): void {
+    _actualize(): void {
         // noop
     }
 
@@ -78,7 +78,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
     notify(): void {
         this._revision = new Revision();
 
-        notifySubscribers(this._subscribers, State.DIRTY, this);
+        notifySubscribers(this._subscribers, State.DIRTY);
         endTx();
     }
 }

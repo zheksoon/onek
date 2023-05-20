@@ -5,10 +5,10 @@ import type {
     IRevision,
     NotifyState,
     ReactionFn,
-    Subscription,
+    ISubscription,
 } from "../types";
 import { State } from "../constants";
-import { scheduleReaction, scheduleStateActualization } from "../schedulers";
+import { scheduleReaction, scheduleActualization } from "../schedulers";
 import { utx } from "../transaction";
 import { checkRevisions, subscribe, unsubscribe } from "./common";
 
@@ -17,13 +17,13 @@ type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 export class Reaction implements IReactionImpl {
     public shouldSubscribe = true;
 
-    private _subscriptions: Map<Subscription, IRevision> = new Map();
+    private _subscriptions: Map<ISubscription, IRevision> = new Map();
     private _destructor: Destructor = null;
     private _state = State.CLEAN as ReactionState;
 
     constructor(private _fn: ReactionFn, private _manager?: () => void) {}
 
-    addSubscription(subscription: Subscription): void {
+    addSubscription(subscription: ISubscription): void {
         if (this.shouldSubscribe) {
             subscription._addSubscriber(this);
         }
@@ -31,16 +31,18 @@ export class Reaction implements IReactionImpl {
         this._subscriptions.set(subscription, subscription.revision());
     }
 
-    _notify(state: NotifyState, subscription: Subscription): void {
+    _notify(state: NotifyState): void {
         if (state === State.MAYBE_DIRTY) {
-            scheduleStateActualization(subscription);
-        } else if (this._state === State.CLEAN) {
+            return;
+        }
+
+        if (this._state === State.CLEAN) {
             this._state = State.DIRTY;
             scheduleReaction(this);
         }
     }
 
-    _runManager(): void {
+    runManager(): void {
         if (this._state === State.DESTROYED) {
             return;
         }
@@ -81,6 +83,12 @@ export class Reaction implements IReactionImpl {
         this.unsubscribeAndCleanup();
 
         utx(this._runnerFn, this);
+    }
+
+    updateRevisions(): void {
+        this._subscriptions.forEach((revision, subscription) => {
+            this._subscriptions.set(subscription, subscription.revision());
+        });
     }
 
     private _runnerFn = () => {

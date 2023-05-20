@@ -46,10 +46,10 @@
     "scripts": {
         "build": "yarn run build:onek && yarn run build:react && yarn run build:react-compat && yarn run build:mobx",
         "build:full": "yarn run build:onek --no-compress && yarn run build:react --no-compress && yarn run build:react-compat --no-compress && yarn run build:mobx --no-compress",
-        "build:onek": "yarn exec microbundle",
-        "build:react": "cd react && yarn exec microbundle --external='onek'",
-        "build:react-compat": "cd react-compat && yarn exec microbundle --external='onek'",
-        "build:mobx": "cd ./mobx && yarn exec microbundle --external='onek'",
+        "build:onek": "yarn exec rimraf ./dist/ && yarn exec microbundle",
+        "build:react": "cd react && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
+        "build:react-compat": "cd react-compat && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
+        "build:mobx": "cd ./mobx && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "test": "node --expose-gc $(yarn bin jest)"
     },
     "devDependencies": {
@@ -66,6 +66,7 @@
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
         "react-test-renderer": "^18.2.0",
+        "rimraf": "^5.0.1",
         "ts-jest": "latest",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.0"

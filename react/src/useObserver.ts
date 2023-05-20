@@ -55,10 +55,6 @@ export function useObserver(): IObserver {
                     reaction.shouldSubscribe = true;
 
                     reaction.subscribe();
-
-                    if (reaction.missedRun()) {
-                        notify();
-                    }
                 }
 
                 subscribers.add(notify);
@@ -74,6 +70,11 @@ export function useObserver(): IObserver {
                 };
             },
             _getRevision() {
+                if (!subscribers.size && reaction.missedRun()) {
+                    reaction.updateRevisions();
+
+                    revision = new Revision();
+                }
                 return revision;
             },
             _onBeforeRender() {

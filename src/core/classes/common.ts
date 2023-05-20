@@ -1,7 +1,7 @@
-import { NotifyState, Subscriber, Subscription } from "../types";
+import { NotifyState, ISubscriber, ISubscription } from "../types";
 import { Revision } from "./revision";
 
-export function checkRevisions(subscriptions: Map<Subscription, Revision>) {
+export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
     let revisionsChanged = false;
 
     subscriptions.forEach((revision, subscription) => {
@@ -12,29 +12,25 @@ export function checkRevisions(subscriptions: Map<Subscription, Revision>) {
 }
 
 export function unsubscribe(
-    subscriptions: Map<Subscription, Revision>,
-    subscriber: Subscriber
+    subscriptions: Map<ISubscription, Revision>,
+    subscriber: ISubscriber
 ): void {
-    subscriptions.forEach((revision, subscription) => {
+    subscriptions.forEach((_revision, subscription) => {
         subscription._removeSubscriber(subscriber);
     });
 }
 
 export function subscribe(
-    subscriptions: Map<Subscription, Revision>,
-    subscriber: Subscriber
+    subscriptions: Map<ISubscription, Revision>,
+    subscriber: ISubscriber
 ): void {
-    subscriptions.forEach((revision, subscription) => {
+    subscriptions.forEach((_revision, subscription) => {
         subscription._addSubscriber(subscriber);
     });
 }
 
-export function notifySubscribers(
-    subscribers: Set<Subscriber>,
-    state: NotifyState,
-    self: Subscription
-): void {
+export function notifySubscribers(subscribers: Set<ISubscriber>, state: NotifyState): void {
     subscribers.forEach((subscriber) => {
-        subscriber._notify(state, self);
+        subscriber._notify(state);
     });
 }

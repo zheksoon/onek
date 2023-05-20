@@ -8,7 +8,7 @@ export function scheduleSubscribersCheck(computed: Computed) {
 
 export function runSubscribersCheck() {
     subscribersCheckQueue.forEach((computed) => {
-        computed._checkSubscribersAndPassivate();
+        computed._checkAndPassivate();
     });
     subscribersCheckQueue.clear();
 }

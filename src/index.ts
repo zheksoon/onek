@@ -13,7 +13,7 @@ export type {
     IOptions,
     Disposer,
     ReactionFn,
-    SubscriberBase,
+    ISubscriber,
 } from "./core/types";
 export {
     observable,

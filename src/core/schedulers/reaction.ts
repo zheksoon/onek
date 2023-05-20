@@ -1,14 +1,13 @@
-import type { IOptions } from "../types";
 import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck, subscribersCheckQueue } from "./subscribersCheck";
-import { runStateActualization, stateActualizationQueue } from "./stateActualization";
+import { runActualizations, actualizationQueue } from "./stateActualization";
 
 let reactionQueue: Array<Reaction> = [];
 let isReactionRunScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
-    Promise.resolve().then(runner, reactionExceptionHandler);
+    Promise.resolve().then(runner).catch(reactionExceptionHandler);
 };
 let reactionExceptionHandler = (exception: any) => {
     console.error("Reaction exception:", exception);
@@ -29,15 +28,15 @@ export function scheduleReaction(reaction: Reaction) {
 function runReactions(): void {
     try {
         let i = MAX_REACTION_ITERATIONS;
-        while (reactionQueue.length || stateActualizationQueue.size) {
-            runStateActualization();
+        while (reactionQueue.length || actualizationQueue.size) {
+            runActualizations();
 
             while (reactionQueue.length && --i) {
                 const reactions = reactionQueue;
                 reactionQueue = [];
                 reactions.forEach((reaction) => {
                     try {
-                        reaction._runManager();
+                        reaction.runManager();
                     } catch (exception: any) {
                         reactionExceptionHandler(exception);
                     }
@@ -57,7 +56,7 @@ function runReactions(): void {
 
 export function scheduleReactionRunner(): void {
     const shouldRunReactions =
-        reactionQueue.length || stateActualizationQueue.size || subscribersCheckQueue.size;
+        reactionQueue.length || actualizationQueue.size || subscribersCheckQueue.size;
 
     if (!isReactionRunScheduled && shouldRunReactions) {
         isReactionRunScheduled = true;
