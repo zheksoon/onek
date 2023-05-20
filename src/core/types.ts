@@ -6,10 +6,12 @@ export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     ? (...args: Args) => R
     : never;
 
-export interface ISubscriber {
-    _notify(state: NotifyState): void;
-
+export interface SubscriberBase {
     addSubscription(subscription: ISubscription): void;
+}
+
+export interface ISubscriber extends SubscriberBase {
+    _notify(state: NotifyState): void;
 }
 
 export interface ISubscription {

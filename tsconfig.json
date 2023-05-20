@@ -1,13 +1,11 @@
 {
     "compilerOptions": {
-        "baseUrl": ".",
         "rootDir": "./src",
-        "esModuleInterop": true,
         "moduleResolution": "node",
+        "esModuleInterop": true,
         "target": "ESNext",
         "module": "ESNext",
         "strict": true,
-        "declaration": true,
         "jsx": "react"
     },
     "include": [
