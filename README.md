@@ -32,16 +32,18 @@ all in a less than **2KB package**.
 
 ## Features
 
-- 🚀 **Reactive observable and computed values** - just like MobX, Solid.js and Preact Signals
-- 🎭 **Both MobX and Solid.js** flavors - choose what you like
-- 🤔 **Not opinionated** about the structure of your models
-- 👁 **Transparency** - no data glitches guaranteed
-- 💧 **No memory leaks** - optimal computed caching without compromises
-- 🧩 **Single hook** - effortless integration with React components
-- 🤓 **Built-in shallow equality** - easily optimize re-renders
-- 💾 **Compatibility** - only ES6 `Set` and `Map` are required
-- 💯 **100% test coverage** with complex cases
-- ⭐️ Written in **100% TypeScript**
+- 🚀 **Reactive Observable and Computed Values** - Inspired by MobX, Solid.js and Preact Signals, Onek delivers the same capabilities in a more compact package. Its goal is to provide a full-featured solution in a small size.
+- 🎭 **Both MobX and Solid.js Flavors** - Onek is not restricted to a single way of creating observable values and defining models. Feel free to choose and mix the styles that best fit your needs.
+- 🤔 **Not Opinionated** - Unlike Redux, Onek doesn't tell you how to structure your models. You can use global state, relational or object-oriented models - whatever you need to do your task.
+- 👁 **Transparency** - Onek guarantees no data glitches. It ensures that every computed value is up-to-date, and optimally cached, so you don't have to worry about inconsistent states during complex operations.
+- 💧 **No Memory Leaks** - Unlike MobX, Onek doesn't need a flag for computed values to keep them alive for caching and invalidation. Onek seamlessly switches between reactive and immutable caching strategies, achieving both optimal caching and no memory leaks.
+- 🧩 **Single Hook** - Onek offers a simple hook for integrating with React components, making your components reactive without any hassle.
+- 🔀 **Concurrent React Features** - With [out-of-the-box support](#react-concurrent-rendering) for React 18 concurrent rendering, Onek allows you to optimize your app's responsiveness without any extra work.
+- 🤓 **Built-in Shallow Equality** - Onek includes built-in shallow equality for objects, arrays, `Map`, and `Set`, covering most use cases and allowing for easy rendering optimization.
+- 💾 **Compatibility** - Onek's core only needs ES6 `Set` and `Map`. This makes it a good choice for older browsers. Also, if your don't need concurrent React features, there is a compatibility package for React 16.8.0.
+- 💯 **100% Test Coverage** - all core functionality is fully covered by complex and exhaustive tests.
+- ⭐️ **Fully TypeScript** - The source code and the tests are all in TypeScript with strict rules and no hacks. This adds another proof of implementation correctness and type safety.
+- ☯️ **Beauty Inside** - Beyond its powerful features, Onek shines in its simplicity. The implementation of complex logic in Onek is done using simple data structures and uses minimal possible amount of fields. Core of Onek is done in expressive object-oriented way, enabling great extensibility. All this makes Onek source easy to read and understand. As Antoine de Saint-Exupéry said, "_Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away._"
 - 📦 ...and all in a less than **2KB package**
 
 ## Table of contents

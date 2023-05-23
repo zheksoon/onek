@@ -15,7 +15,6 @@ import { withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
 import { Revision } from "./revision";
 import { checkRevisions, notifySubscribers, subscribe, unsubscribe } from "./common";
-import { invariant } from "../../utils";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -100,8 +99,10 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     _actualize(willHaveSubscriber: boolean): void {
-        if (this._state === State.PASSIVE && !checkRevisions(this._subscriptions)) {
-            return;
+        if (this._state === State.PASSIVE) {
+            if (!checkRevisions(this._subscriptions)) {
+                return;
+            }
         }
 
         if (this._state === State.MAYBE_DIRTY) {
@@ -121,9 +122,9 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
             const isActive = willHaveSubscriber || (wasInitialized && wasNotPassive);
 
-            this._subscriptions.clear();
-
             this._state = isActive ? State.COMPUTING : State.COMPUTING_PASSIVE;
+
+            this._subscriptions.clear();
 
             const oldSubscriber = setSubscriber(this);
 
