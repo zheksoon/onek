@@ -14,7 +14,7 @@ import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
-import { notifySubscribers } from "./common";
+import { notify } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = new Revision();
@@ -78,7 +78,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
     notify(): void {
         this._revision = new Revision();
 
-        notifySubscribers(this._subscribers, State.DIRTY);
+        notify(this._subscribers, State.DIRTY);
         endTx();
     }
 }

@@ -29,7 +29,7 @@ export function subscribe(
     });
 }
 
-export function notifySubscribers(subscribers: Set<ISubscriber>, state: NotifyState): void {
+export function notify(subscribers: Set<ISubscriber>, state: NotifyState): void {
     subscribers.forEach((subscriber) => {
         subscriber._notify(state);
     });

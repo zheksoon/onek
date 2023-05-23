@@ -14,7 +14,7 @@ import { scheduleActualization, scheduleSubscribersCheck } from "../schedulers";
 import { withUntracked } from "../transaction";
 import { untrackedShallowEquals } from "../utils";
 import { Revision } from "./revision";
-import { checkRevisions, notifySubscribers, subscribe, unsubscribe } from "./common";
+import { checkRevisions, notify, subscribe, unsubscribe } from "./common";
 
 type ComputedState =
     | State.NOT_INITIALIZED
@@ -56,7 +56,8 @@ export class Computed<T = any> implements IComputedImpl<T> {
         this._subscribers.add(subscriber);
 
         if (this._state === State.PASSIVE) {
-            this._resurrect();
+            subscribe(this._subscriptions, this);
+            this._state = State.CLEAN;
         }
     }
 
@@ -70,7 +71,8 @@ export class Computed<T = any> implements IComputedImpl<T> {
 
     _checkAndPassivate(): void {
         if (!this._subscribers.size && this._state !== State.PASSIVE) {
-            this._passivate();
+            unsubscribe(this._subscriptions, this);
+            this._state = State.PASSIVE;
         }
     }
 
@@ -85,16 +87,16 @@ export class Computed<T = any> implements IComputedImpl<T> {
             scheduleActualization(this);
 
             if (oldState === State.CLEAN) {
-                this._notifySubscribers(State.MAYBE_DIRTY);
+                notify(this._subscribers, State.MAYBE_DIRTY);
             }
         } else {
-            this._notifySubscribers(state);
+            notify(this._subscribers, state);
         }
 
         this._state = state;
 
         if (state === State.DIRTY) {
-            this._unsubscribe();
+            unsubscribe(this._subscriptions, this);
         }
     }
 
@@ -137,7 +139,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
                     if (this._checkFn(this._value!, newValue)) {
                         return;
                     }
-                    this._notifySubscribers(State.DIRTY);
+                    notify(this._subscribers, State.DIRTY);
                 }
                 this._value = newValue;
                 this._revision = new Revision();
@@ -157,7 +159,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     destroy(): void {
-        this._unsubscribe();
+        unsubscribe(this._subscriptions, this);
         this._subscriptions.clear();
         this._state = State.NOT_INITIALIZED;
         this._value = undefined;
@@ -175,28 +177,6 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
 
         return this._value!;
-    }
-
-    private _subscribe(): void {
-        subscribe(this._subscriptions, this);
-    }
-
-    private _unsubscribe(): void {
-        unsubscribe(this._subscriptions, this);
-    }
-
-    private _notifySubscribers(state: NotifyState): void {
-        notifySubscribers(this._subscribers, state);
-    }
-
-    private _passivate(): void {
-        this._unsubscribe();
-        this._state = State.PASSIVE;
-    }
-
-    private _resurrect(): void {
-        this._subscribe();
-        this._state = State.CLEAN;
     }
 }
 
