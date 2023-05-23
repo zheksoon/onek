@@ -9,4 +9,4 @@ export const enum State {
     DESTROYED,
 }
 
-export const MAX_REACTION_ITERATIONS = 100;
+export const MAX_REACTION_ITERATIONS = 1000;

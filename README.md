@@ -50,6 +50,7 @@ all in a less than **2KB package**.
 
 - [Installation](#installation)
 - [Introduction](#introduction)
+  - [Show me the code!](#show-me-the-code)
   - [Observable values](#observable-values)
   - [Computed values](#computed-values)
   - [Using with React](#using-with-react)
@@ -76,6 +77,64 @@ yarn add onek
 npm install --save onek
 ```
 
+## Show me the code
+
+Here's an example of counter app that showcases all main features of Onek with React:
+
+```jsx
+import { action, computed, observable } from "onek";
+import { useObserver } from "onek/react";
+
+// defined observable value
+const [count, setCount] = observable(0);
+
+// define computed values derived from the observable
+const canIncrease = computed(() => count() < 10);
+
+const canDecrease = computed(() => count() > 0);
+
+// defined actions that manipulate observable values
+const increase = action(() => {
+  if (canIncrease()) {
+    setCount((count) => count + 1);
+  }
+});
+
+const decrease = action(() => {
+  if (canDecrease()) {
+    setCount((count) => count - 1);
+  }
+});
+
+const Counter = () => {
+  // get observer instance
+  const observer = useObserver();
+
+  // wrap your render code with the observer to make it reactive
+  return observer(() => (
+    <div>
+      <p>Count: {count()}</p>
+      <button disabled={!canDecrease()} onClick={decrease}>
+        -
+      </button>
+      <button disabled={!canIncrease()} onClick={increase}>
+        +
+      </button>
+    </div>
+  ));
+};
+
+// two counters rendered in sync
+root.render(
+  <>
+    <Counter />
+    <Counter />
+  </>
+);
+```
+
+[See it on CodeSandbox](https://codesandbox.io/s/onek-counter-example-ynilr8?file=/src/App.tsx)
+
 ## Introduction
 
 **Note:** in this section Solid.js flavor will be used. If you want examples for MobX flavor, check
@@ -83,8 +142,7 @@ out the [MobX flavor](#mobx-flavor) section.
 
 ### Observable values
 
-`observable` is a simple function that accepts an initial value and returns a tuple of getter and
-setter functions - the same convention as `useState` from React:
+If you're familiar with React's `useState` hook, you're already halfway to understanding Onek's `observable` function. Like the `useState` hook, it accepts initial value and returns a tuple of value getter and setter. The difference is that the value getter is a **function** that returns the value instead of the value itself:
 
 ```js
 import { observable } from "onek";
@@ -101,35 +159,39 @@ setGreeting((oldGreeting) => oldGreeting + "!!!");
 greeting() === "hola!!!!";
 ```
 
+Please note that while it's similar to React's `useState`, it shouldn't be used in a React component. In this case use `useObservable` hook described in [Using with React](#using-with-react) section.
+
 <details>
   <summary><b>Extra:</b> equality check argument</summary>
 
-The second argument to `observable` might be an equality check function (or `true` for the
-built-in `shallowEquals` implementation):
+`observable` supports an equality check function as a second argument. This function can be used to prevent unnecessary updates when the value hasn't effectively changed. You can also use `true` to use the built-in `shallowEquals` implementation:
 
 ```js
 import { shallowEquals } from "onek";
 
-const [number, setNumber] = observable(1, true);
+const [greetings, setGreetings] = observable(["hello"], true);
 // or equivalently
-const [number, setNumber] = observable(1, shallowEquals);
+const [greetings, setGreetings] = observable(["hello"], shallowEquals);
 
-setNumber(1); // no updates to dependant computeds and reactions
+// setting an equal value doesn't trigger updates
+setNumber(["hello"]);
 ```
+
+Built-in `shallowEquals` covers plain objects, arrays, `Map` and `Set` equality, but if you need something else (like lodash's `isEqual`), just pass it as the second argument.
 
 </details>
 
 <details>
   <summary><b>Extra:</b> storing functions in observable</summary>
 
-In order to store a function in an observable you need to pass `true` as the second argument to the
-setter function. This argument means the setter should store the first argument as-is, without its
-interpretation as an updater function:
+In Onek, you can store functions directly in an observable. This is useful for cases where you need to store callback or computation functions. To do this, pass true as the second argument to the setter function:
 
 ```js
+// create an observable for a callback function
 const [callback, setCallback] = observable(() => console.log("hello!"));
 
-setCallback(() => console.log("hola!"), true); // stores callback as is
+// stores the callback as is
+setCallback(() => console.log("hola!"), true);
 ```
 
 </details>
@@ -157,22 +219,26 @@ loudGreeting() === "HI!";
 <details>
   <summary><b>Extra:</b> equality check argument</summary>
 
-The second argument to `computed` is also an equality check function (or `true` for the built-in
-implementation):
+Just like with `observable`, you can also provide an equality check function as a second argument to `computed` (or `true` for default `shallowEquals` implementation). This allows you to control when the `computed` value is considered to have changed and needs to notify its subscribers about it. In case the equality check function returns `true`, the output of the computed remains referentially equal to the old one:
 
 ```js
+// create observable with an array of numbers
 const [numbers, setNumbers] = observable([1, 2, 3, 4]);
 
-const sortedNumbers = computed(() => numbers().slice().sort(), true);
+// create a computed value that returns sorted array
+const sortedNumbers = computed(() => [...numbers()].sort(), true);
 
 const result = sortedNumbers();
 
-console.log(result); // [1,2,3,4]
+console.log(result); // output: [1,2,3,4]
 
+// the array is different, but sorted result is the same
 setNumbers([4, 3, 2, 1]);
 
 sortedNumbers() === result; // result is referrentially the same
 ```
+
+The primary goal of the equality check argument is to manage and limit side effects, such as updates to React components or executions of `reaction` functions. These side effects might occur due to changes in the source `observable` or `computed` values. By using an equality check, you can ensure that these side effects are triggered only when the result of the `computed` function changes substantially, rather than being activated by every minor change to the source values. This approach can be particularly useful when the source values change frequently, but the computed result does not.
 
 </details>
 
