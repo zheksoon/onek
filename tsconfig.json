@@ -5,7 +5,7 @@
         "esModuleInterop": true,
         "target": "ES2017",
         "module": "ESNext",
-        "strict": true,
+        "strict": false,
         "jsx": "react"
     },
     "include": [

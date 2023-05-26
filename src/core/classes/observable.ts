@@ -1,103 +1,83 @@
-import type {
-    CheckFn,
-    IObservable,
-    IObservableGetter,
-    IObservableImpl,
-    IRevision,
-    ISetter,
-    ISubscriber,
-    UpdaterFn,
-} from "../types";
+import type { IRevision, ISubscriber, UpdaterFn } from "../types";
 import { State } from "../constants";
-import { Computed } from "./computed";
 import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
-import { endTx, withUntracked } from "../transaction";
-import { untrackedShallowEquals } from "../utils";
+import { endTx } from "../transaction";
 import { notify } from "./common";
 
-export class Observable<T = any> implements IObservableImpl<T> {
-    private _revision: IRevision = new Revision();
-    private _subscribers: Set<ISubscriber> = new Set();
+export function observable<T = any>(_value: T, _checkFn) {
+    let _revision: IRevision = {};
+    const _subscribers: Set<ISubscriber> = new Set();
 
-    private declare _value: T;
-    private declare readonly _checkFn?: CheckFn<T>;
+    const self = {
+        _addSubscriber(subscriber: ISubscriber): void {
+            _subscribers.add(subscriber);
+        },
+        _removeSubscriber(subscriber: ISubscriber): void {
+            _subscribers.delete(subscriber);
+        },
+        _actualize(): void {
+            // noop
+        },
+        _getRevision(): IRevision {
+            return _revision;
+        },
+    };
 
-    constructor(value: T, checkFn?: boolean | CheckFn<T>) {
-        this._value = value;
-        this._checkFn = checkFn
-            ? typeof checkFn === "function"
-                ? withUntracked(checkFn)
-                : untrackedShallowEquals
-            : undefined;
-    }
-
-    _addSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.add(subscriber);
-    }
-
-    _removeSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.delete(subscriber);
-    }
-
-    _actualize(): void {
-        // noop
-    }
-
-    revision(): IRevision {
-        return this._revision;
-    }
-
-    get(_subscriber = subscriber): T {
-        if (_subscriber) {
-            _subscriber.addSubscription(this);
-        }
-        return this._value;
-    }
-
-    set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
-        if (subscriber && subscriber instanceof Computed) {
-            throw new Error("Changing observable inside of computed");
+    const set = (newValue?: T | UpdaterFn<T>, asIs?): void => {
+        if (subscriber) {
+            throw new Error("changing observable outside of action");
         }
 
         if (arguments.length > 0) {
             if (typeof newValue === "function" && !asIs) {
-                newValue = (newValue as UpdaterFn<T>)(this._value);
+                newValue = (newValue as UpdaterFn<T>)(_value);
             }
 
-            if (this._checkFn && this._checkFn(this._value, newValue as T)) {
+            if (_checkFn && _checkFn(_value, newValue as T)) {
                 return;
             }
 
-            this._value = newValue as T;
+            _value = newValue as T;
         }
 
-        this.notify();
-    }
+        _notify();
+    };
 
-    notify(): void {
-        this._revision = new Revision();
+    const _notify = (): void => {
+        _revision = {};
 
-        notify(this._subscribers, State.DIRTY);
+        notify(_subscribers, State.DIRTY);
         endTx();
-    }
-}
+    };
 
-export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
-    const obs = new Observable(value, checkFn);
-    const get = obs.get.bind(obs) as IObservableGetter<T>;
-    const set = obs.set.bind(obs) as ISetter<T>;
+    const get = (_subscriber = subscriber): T => {
+        if (_subscriber) {
+            _subscriber._addSubscription(self);
+        }
+        return _value;
+    };
 
-    get.instance = obs;
-    get.revision = obs.revision.bind(obs);
+    get.notify = _notify;
 
     return [get, set] as const;
 }
 
-observable.box = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
-    return new Observable(value, checkFn);
-};
-
-observable.prop = <T>(value: T, checkFn?: boolean | CheckFn<T>): T => {
-    return new Observable(value, checkFn) as unknown as T;
-};
+// export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
+//     const obs = new Observable(value, checkFn);
+//     const get = obs.get.bind(obs) as IObservableGetter<T>;
+//     const set = obs.set.bind(obs) as ISetter<T>;
+//
+//     get.instance = obs;
+//     get._getRevision = obs._getRevision.bind(obs);
+//
+//     return [get, set] as const;
+// }
+//
+// observable.box = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
+//     return new Observable(value, checkFn);
+// };
+//
+// observable.prop = <T>(value: T, checkFn?: boolean | CheckFn<T>): T => {
+//     return new Observable(value, checkFn) as unknown as T;
+// };

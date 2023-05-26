@@ -5,7 +5,7 @@ export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
     let revisionsChanged = false;
 
     subscriptions.forEach((revision, subscription) => {
-        revisionsChanged ||= subscription.revision() !== revision;
+        revisionsChanged ||= subscription._getRevision() !== revision;
     });
 
     return revisionsChanged;

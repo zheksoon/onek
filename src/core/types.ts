@@ -7,7 +7,7 @@ export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     : never;
 
 export interface SubscriberBase {
-    addSubscription(subscription: ISubscription): void;
+    _addSubscription(subscription: ISubscription): void;
 }
 
 export interface ISubscriber extends SubscriberBase {
@@ -15,7 +15,7 @@ export interface ISubscriber extends SubscriberBase {
 }
 
 export interface ISubscription {
-    revision(): IRevision;
+    _getRevision(): IRevision;
 
     _addSubscriber(subscriber: ISubscriber): void;
 
@@ -26,12 +26,10 @@ export interface ISubscription {
 
 export interface IRevision {}
 
-export type MaybeSubscriber = ISubscriber | null;
+export type MaybeSubscriber = ISubscriber | undefined;
 
 export interface IGettable<T> {
     get(_subscriber?: ISubscriber): T;
-
-    revision(): IRevision;
 }
 
 export interface IObservable<T> extends IGettable<T> {
@@ -59,15 +57,9 @@ export interface IReaction {
 
     run(): void;
 
-    runManager(): void;
-
-    subscribe(): void;
-
-    unsubscribe(): void;
+    _runManager(): void;
 
     unsubscribeAndCleanup(): void;
-
-    updateRevisions(): void;
 }
 
 export interface IReactionImpl extends IReaction, ISubscriber {}

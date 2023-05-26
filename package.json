@@ -127,14 +127,7 @@
         "mangle": {
             "properties": {
                 "regex": "^_"
-            },
-            "keep_classnames": true,
-            "reserved": [
-                "Observable",
-                "Computed",
-                "Reaction",
-                "Revision"
-            ]
+            }
         }
     }
 }

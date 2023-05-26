@@ -1,19 +1,7 @@
-import type {
-    CheckFn,
-    IComputed,
-    IComputedGetter,
-    IComputedImpl,
-    IRevision,
-    ISubscriber,
-    ISubscription,
-    NotifyState,
-} from "../types";
+import type { IRevision, ISubscriber, ISubscription, NotifyState } from "../types";
 import { State } from "../constants";
 import { setSubscriber, subscriber } from "../subscriber";
-import { scheduleActualization, scheduleSubscribersCheck } from "../schedulers";
-import { withUntracked } from "../transaction";
-import { untrackedShallowEquals } from "../utils";
-import { Revision } from "./revision";
+import { actualizationQueue, subscribersCheckQueue } from "../schedulers";
 import { checkRevisions, notify, subscribe, unsubscribe } from "./common";
 
 type ComputedState =
@@ -25,176 +13,160 @@ type ComputedState =
     | State.DIRTY
     | State.PASSIVE;
 
-export class Computed<T = any> implements IComputedImpl<T> {
-    private _value: T | undefined = undefined;
-    private _revision: IRevision = new Revision();
-    private readonly _subscribers: Set<ISubscriber> = new Set();
-    private readonly _subscriptions: Map<ISubscription, IRevision> = new Map();
-    private _state: ComputedState = State.NOT_INITIALIZED;
+export function computed<T = any>(_fn: () => T, _checkFn) {
+    let _value: T | undefined;
+    let _revision: IRevision = {};
+    const _subscribers: Set<ISubscriber> = new Set();
+    const _subscriptions: Map<ISubscription, IRevision> = new Map();
+    let _state: ComputedState = State.NOT_INITIALIZED;
 
-    private declare readonly _fn: () => T;
-    private declare readonly _checkFn?: CheckFn<T>;
-
-    constructor(fn: () => T, checkFn?: boolean | CheckFn<T>) {
-        this._fn = fn;
-        this._checkFn = checkFn
-            ? typeof checkFn === "function"
-                ? withUntracked(checkFn)
-                : untrackedShallowEquals
-            : undefined;
-    }
-
-    addSubscription(subscription: ISubscription): void {
-        if (this._state !== State.COMPUTING_PASSIVE) {
-            subscription._addSubscriber(this);
-        }
-
-        this._subscriptions.set(subscription, subscription.revision());
-    }
-
-    _addSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.add(subscriber);
-
-        if (this._state === State.PASSIVE) {
-            subscribe(this._subscriptions, this);
-            this._state = State.CLEAN;
-        }
-    }
-
-    _removeSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.delete(subscriber);
-
-        if (!this._subscribers.size && this._state !== State.PASSIVE) {
-            scheduleSubscribersCheck(this);
-        }
-    }
-
-    _checkAndPassivate(): void {
-        if (!this._subscribers.size && this._state !== State.PASSIVE) {
-            unsubscribe(this._subscriptions, this);
-            this._state = State.PASSIVE;
-        }
-    }
-
-    _notify(state: NotifyState) {
-        const oldState = this._state;
-
-        if (oldState === state || oldState === State.DIRTY) {
-            return;
-        }
-
-        if (this._checkFn) {
-            scheduleActualization(this);
-
-            if (oldState === State.CLEAN) {
-                notify(this._subscribers, State.MAYBE_DIRTY);
+    const self = {
+        _addSubscription(subscription: ISubscription): void {
+            if (_state !== State.COMPUTING_PASSIVE) {
+                subscription._addSubscriber(self);
             }
-        } else {
-            notify(this._subscribers, state);
-        }
 
-        this._state = state;
+            _subscriptions.set(subscription, subscription._getRevision());
+        },
+        _addSubscriber(subscriber: ISubscriber): void {
+            _subscribers.add(subscriber);
 
-        if (state === State.DIRTY) {
-            unsubscribe(this._subscriptions, this);
-        }
-    }
+            if (_state === State.PASSIVE) {
+                subscribe(_subscriptions, self);
+                _state = State.CLEAN;
+            }
+        },
+        _removeSubscriber(subscriber: ISubscriber): void {
+            _subscribers.delete(subscriber);
 
-    _actualize(willHaveSubscriber: boolean): void {
-        if (this._state === State.PASSIVE) {
-            if (!checkRevisions(this._subscriptions)) {
+            if (_subscribers.size && _state !== State.PASSIVE) {
+                subscribersCheckQueue.add(self);
+            }
+        },
+        _actualize(willHaveSubscriber: boolean): void {
+            if (_state === State.PASSIVE) {
+                if (!checkRevisions(_subscriptions)) return;
+            }
+
+            if (_state === State.MAYBE_DIRTY) {
+                _subscriptions.forEach((revision, subscription) => {
+                    subscription._actualize(willHaveSubscriber);
+                });
+
+                if (_state === State.MAYBE_DIRTY) {
+                    _state = State.CLEAN;
+                }
+            }
+
+            if (_state !== State.CLEAN) {
+                const wasInitialized = _state !== State.NOT_INITIALIZED;
+                const wasNotPassive = _state !== State.PASSIVE;
+
+                const isActive = willHaveSubscriber || (wasInitialized && wasNotPassive);
+
+                _state = isActive ? State.COMPUTING : State.COMPUTING_PASSIVE;
+
+                _subscriptions.clear();
+
+                const oldSubscriber = setSubscriber(self);
+
+                try {
+                    const newValue = _fn();
+
+                    _state = isActive ? State.CLEAN : State.PASSIVE;
+
+                    if (_checkFn && wasInitialized) {
+                        if (_checkFn(_value!, newValue)) {
+                            return;
+                        }
+                        notify(_subscribers, State.DIRTY);
+                    }
+                    _value = newValue;
+                    _revision = {};
+                } catch (e) {
+                    destroy();
+                    throw e;
+                } finally {
+                    setSubscriber(oldSubscriber);
+                }
+            }
+        },
+        _getRevision(): IRevision {
+            self._actualize(false);
+
+            return _revision;
+        },
+        _checkAndPassivate(): void {
+            if (!_subscribers.size && _state !== State.PASSIVE) {
+                unsubscribe(_subscriptions, self);
+                _state = State.PASSIVE;
+            }
+        },
+        _notify(state: NotifyState) {
+            if (_state === state) {
                 return;
             }
-        }
 
-        if (this._state === State.MAYBE_DIRTY) {
-            this._subscriptions.forEach((revision, subscription) => {
-                subscription._actualize(willHaveSubscriber);
-            });
+            if (_checkFn) {
+                actualizationQueue.add(self);
 
-            if (this._state === State.MAYBE_DIRTY) {
-                this._state = State.CLEAN;
-            }
-        }
-
-        if (this._state !== State.CLEAN) {
-            const oldState = this._state;
-            const wasInitialized = oldState !== State.NOT_INITIALIZED;
-            const wasNotPassive = oldState !== State.PASSIVE;
-
-            const isActive = willHaveSubscriber || (wasInitialized && wasNotPassive);
-
-            this._state = isActive ? State.COMPUTING : State.COMPUTING_PASSIVE;
-
-            this._subscriptions.clear();
-
-            const oldSubscriber = setSubscriber(this);
-
-            try {
-                const newValue = this._fn();
-
-                this._state = isActive ? State.CLEAN : State.PASSIVE;
-
-                if (this._checkFn && wasInitialized) {
-                    if (this._checkFn(this._value!, newValue)) {
-                        return;
-                    }
-                    notify(this._subscribers, State.DIRTY);
+                if (_state === State.CLEAN) {
+                    notify(_subscribers, State.MAYBE_DIRTY);
                 }
-                this._value = newValue;
-                this._revision = new Revision();
-            } catch (e) {
-                this.destroy();
-                throw e;
-            } finally {
-                setSubscriber(oldSubscriber);
+            } else {
+                notify(_subscribers, state);
             }
-        }
-    }
 
-    revision(): IRevision {
-        this._actualize(false);
+            _state = state;
 
-        return this._revision;
-    }
+            if (state === State.DIRTY) {
+                unsubscribe(_subscriptions, self);
+            }
+        },
+    };
 
-    destroy(): void {
-        unsubscribe(this._subscriptions, this);
-        this._subscriptions.clear();
-        this._state = State.NOT_INITIALIZED;
-        this._value = undefined;
-    }
-
-    get(_subscriber = subscriber): T {
-        if (this._state === State.COMPUTING || this._state === State.COMPUTING_PASSIVE) {
-            throw new Error("Recursive computed call");
+    const get = (_subscriber = subscriber): T => {
+        if (_state === State.COMPUTING || _state === State.COMPUTING_PASSIVE) {
+            throw new Error("recursive computed call");
         }
 
-        this._actualize(subscriber !== null);
+        self._actualize(!!subscriber);
 
         if (_subscriber) {
-            _subscriber.addSubscription(this);
+            _subscriber._addSubscription(self);
         }
 
-        return this._value!;
-    }
-}
+        return _value!;
+    };
 
-export function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputedGetter<T> {
-    const comp = new Computed(fn, checkFn);
-    const get = comp.get.bind(comp) as IComputedGetter<T>;
+    const destroy = (): void => {
+        unsubscribe(_subscriptions, self);
+        _subscriptions.clear();
+        _state = State.NOT_INITIALIZED;
+        _value = undefined;
+    };
 
-    get.instance = comp;
-    get.destroy = comp.destroy.bind(comp);
-    get.revision = comp.revision.bind(comp);
+    get.destroy = destroy;
 
     return get;
 }
 
-computed.box = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputed<T> => {
-    return new Computed(fn, checkFn);
-};
-
-computed.prop = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): T => {
-    return new Computed(fn, checkFn) as unknown as T;
-};
+//
+// export function computed<T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputedGetter<T> {
+//     const comp = new Computed(fn, checkFn);
+//     const get = comp.get.bind(comp) as IComputedGetter<T>;
+//
+//     get.instance = comp;
+//     get.destroy = comp.destroy.bind(comp);
+//     get._getRevision = comp._getRevision.bind(comp);
+//
+//     return get;
+// }
+//
+// computed.box = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): IComputed<T> => {
+//     return new Computed(fn, checkFn);
+// };
+//
+// computed.prop = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>): T => {
+//     return new Computed(fn, checkFn) as unknown as T;
+// };

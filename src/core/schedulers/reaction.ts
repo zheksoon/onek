@@ -1,16 +1,15 @@
-import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck } from "./subscribersCheck";
 import { actualizationQueue, runActualizations } from "./stateActualization";
 
-let reactionQueue: Array<Reaction> = [];
+export let reactionQueue = [];
 let isReactionRunScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
     Promise.resolve().then(runner).catch(reactionExceptionHandler);
 };
 let reactionExceptionHandler = (exception: any) => {
-    console.error("Reaction exception:", exception);
+    console.error('reaction exception', exception);
 };
 
 export function setReactionScheduler(scheduler: typeof reactionScheduler) {
@@ -21,7 +20,7 @@ export function setReactionExceptionHandler(handler: typeof reactionExceptionHan
     reactionExceptionHandler = handler;
 }
 
-export function scheduleReaction(reaction: Reaction) {
+export function scheduleReaction(reaction) {
     reactionQueue.push(reaction);
 }
 
@@ -35,7 +34,7 @@ function runReactions(): void {
             reactionQueue = [];
             reactions.forEach((reaction) => {
                 try {
-                    reaction.runManager();
+                    reaction();
                 } catch (exception: any) {
                     reactionExceptionHandler(exception);
                 }

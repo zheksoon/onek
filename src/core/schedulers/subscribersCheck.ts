@@ -1,10 +1,4 @@
-import { Computed } from "../classes";
-
-export const subscribersCheckQueue: Set<Computed> = new Set();
-
-export function scheduleSubscribersCheck(computed: Computed) {
-    subscribersCheckQueue.add(computed);
-}
+export const subscribersCheckQueue: any = new Set();
 
 export function runSubscribersCheck() {
     subscribersCheckQueue.forEach((computed) => {
