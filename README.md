@@ -27,7 +27,7 @@
 
 **Onek** (reads as **_one-kay_** or **_on-ek_**) is a simple but powerful state management library
 for **React** based on a solid foundation of functional reactive data structures from **MobX** and
-**Solid.js**, providing everything needed for managing state in complex React applications,
+**Solid.js**. It provides everything needed for managing state in complex React applications,
 all in a less than **2KB package**.
 
 ## Features
@@ -35,15 +35,15 @@ all in a less than **2KB package**.
 - 🚀 **Reactive Observable and Computed Values** - Inspired by MobX, Solid.js and Preact Signals, Onek delivers the same capabilities in a more compact package. Its goal is to provide a full-featured solution in a small size.
 - 🎭 **Both MobX and Solid.js Flavors** - Onek is not restricted to a single way of creating observable values and defining models. Feel free to choose and mix the styles that best fit your needs.
 - 🤔 **Not Opinionated** - Unlike Redux, Onek doesn't tell you how to structure your models. You can use global state, relational or object-oriented models - whatever you need to do your task.
-- 👁 **Transparency** - Onek guarantees no data glitches. It ensures that every computed value is up-to-date, and optimally cached, so you don't have to worry about inconsistent states during complex operations.
+- 👁 **Transparency** - Onek guarantees no data glitches. It ensures that every computed value is up-to-date and optimally cached, so you don't have to worry about inconsistent states during complex operations.
 - 💧 **No Memory Leaks** - Unlike MobX, Onek doesn't need a flag for computed values to keep them alive for caching and invalidation. Onek seamlessly switches between reactive and immutable caching strategies, achieving both optimal caching and no memory leaks.
 - 🧩 **Single Hook** - Onek offers a simple hook for integrating with React components, making your components reactive without any hassle.
 - 🔀 **Concurrent React Features** - With [out-of-the-box support](#react-concurrent-rendering) for React 18 concurrent rendering, Onek allows you to optimize your app's responsiveness without any extra work.
 - 🤓 **Built-in Shallow Equality** - Onek includes built-in shallow equality for objects, arrays, `Map`, and `Set`, covering most use cases and allowing for easy rendering optimization.
-- 💾 **Compatibility** - Onek's core only needs ES6 `Set` and `Map`. This makes it a good choice for older browsers. Also, if your don't need concurrent React features, there is a compatibility package for React 16.8.0.
+- 💾 **Compatibility** - Onek's core only needs ES6 `Set` and `Map`. This makes it a good choice for older browsers. Also, if you don't need concurrent React features, there is a compatibility package for React 16.8.0.
 - 💯 **100% Test Coverage** - all core functionality is fully covered by complex and exhaustive tests.
 - ⭐️ **Fully TypeScript** - The source code and the tests are all in TypeScript with strict rules and no hacks. This adds another proof of implementation correctness and type safety.
-- ☯️ **Beauty Inside** - Beyond its powerful features, Onek shines in its simplicity. The implementation of complex logic in Onek is done using simple data structures and uses minimal possible amount of fields. Core of Onek is done in expressive object-oriented way, enabling great extensibility. All this makes Onek source easy to read and understand. As Antoine de Saint-Exupéry said, "_Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away._"
+- ☯️ **Beauty Inside** - Beyond its powerful features, Onek shines in its simplicity. The implementation of complex logic in Onek is done using simple data structures and uses minimal possible amount of class fields. The core of Onek is done in an expressive object-oriented way, enabling great extensibility. All this makes Onek source easy to read and understand. As Antoine de Saint-Exupéry said, "_Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away._"
 - 📦 ...and all in a less than **2KB package**
 
 ## Table of contents
@@ -79,7 +79,7 @@ npm install --save onek
 
 ## Show me the code
 
-Here's an example of counter app that showcases all main features of Onek with React:
+Here's an example of a counter app that showcases all the main features of Onek with React:
 
 ```jsx
 import { action, computed, observable } from "onek";
@@ -137,12 +137,12 @@ root.render(
 
 ## Introduction
 
-**Note:** in this section Solid.js flavor will be used. If you want examples for MobX flavor, check
+**Note:** in this section Solid.js flavor will be used. If you want examples of MobX flavor, check
 out the [MobX flavor](#mobx-flavor) section.
 
 ### Observable values
 
-If you're familiar with React's `useState` hook, you're already halfway to understanding Onek's `observable` function. Like the `useState` hook, it accepts initial value and returns a tuple of value getter and setter. The difference is that the value getter is a **function** that returns the value instead of the value itself:
+If you're familiar with React's `useState` hook, you're already halfway to understanding Onek's `observable` function. Like the `useState` hook, it accepts an initial value and returns a tuple of value getter and setter. The difference is that the value getter is a **function** that returns the value instead of the value itself:
 
 ```js
 import { observable } from "onek";
@@ -159,7 +159,7 @@ setGreeting((oldGreeting) => oldGreeting + "!!!");
 greeting() === "hola!!!!";
 ```
 
-Please note that while it's similar to React's `useState`, it shouldn't be used in a React component. In this case use `useObservable` hook described in [Using with React](#using-with-react) section.
+Please note that while it's similar to React's `useState`, it shouldn't be used in a React component. In this case, use the `useObservable` hook described in [Using with React](#using-with-react) section.
 
 <details>
   <summary><b>Extra:</b> equality check argument</summary>
@@ -177,7 +177,7 @@ const [greetings, setGreetings] = observable(["hello"], shallowEquals);
 setNumber(["hello"]);
 ```
 
-Built-in `shallowEquals` covers plain objects, arrays, `Map` and `Set` equality, but if you need something else (like lodash's `isEqual`), just pass it as the second argument.
+Built-in `shallowEquals` covers plain objects, arrays, `Map` and `Set` equality, but if you need something else (like lodash `isEqual`), just pass it as the second argument.
 
 </details>
 
@@ -198,11 +198,10 @@ setCallback(() => console.log("hola!"), true);
 
 ### Computed values
 
-A computed value is like `useMemo` in React - it's cached and returns the cached value afterwards.
+A computed value is like `useMemo` in React - it's cached and returns the cached value afterward.
 All accessed `observable` or other `computed` values are automatically tracked, there is no need to
 specify a dependency list.
-Changes to these tracked values automatically invalidate the cached value, which is recalculated on
-next access to the `computed`:
+Changes to these tracked values automatically invalidate the cached value, which is recalculated on the next access to the `computed`:
 
 ```js
 import { computed } from "onek";
@@ -280,7 +279,7 @@ root.render(
 ```
 
 `useObserver` hook has no arguments and returns an observer function. You can wrap your component
-code with it or pass it to `observable` and `computed` getters in order to get the component update
+code with it or pass it to `observable` and `computed` getters to get the component update
 on their changes. Reading observable values outside of the observer fn or without passing it to
 getters won't subscribe the component to changes:
 
@@ -300,11 +299,10 @@ const Component = () => {
 ### Actions and transactions
 
 **Actions** automatically batch updates to observable values, and also make access to observable
-getters untracked - so if your action is called inside a component's render function or inside a
-reaction it won't make it re-render on accessed values change.
+getters untracked - so if your action is called inside a component's render function or a reaction it won't make it re-render on accessed values change.
 
-**Important note**: by default all changes to `observable` values are batched until the end of the
-current microtask. In order to run reactions synchronously on transaction end, please read
+**Important note**: by default, all changes to `observable` values are batched until the end of the
+current microtask. To run reactions synchronously on the transaction end, please read
 the [Changing reaction scheduler](#reaction-scheduler) section.
 
 ```js
@@ -333,7 +331,7 @@ tx(() => {
 });
 ```
 
-To get the same behavior as `action` use `utx` (**U**ntracked transaction) instead:
+To get the same behavior as the `action` use `utx` (**U**ntracked transaction) instead:
 
 ```js
 const result = utx(() => {
@@ -376,7 +374,7 @@ when any side effects run.
   <summary><b>Extra:</b> async operations for synchronous scheduler</summary>
 
 [You can configure](#reaction-scheduler) Onek to use synchronous reaction scheduler that will
-execute side effects synchronously after each transaction end. In this case you need to use `action`
+execute side effects synchronously after each transaction ends. In this case, you need to use `action`
 for promise handlers or `utx` for code blocks in async function, i.e.:
 
 ```js
@@ -492,7 +490,7 @@ function makeModel(initialValue) {
 ```
 
 A downside of this approach is that it's required to explicitly return all model
-getters/setters/actions, which can be cumbersome for large models. Also it requires defining a
+getters/setters/actions, which can be cumbersome for large models. Also, it requires defining a
 convenient TypeScript type for the model:
 
 ```ts
@@ -526,7 +524,7 @@ model.double === 20;
 model.value = 100;
 ```
 
-It defines observable and computed values on class and then calls `makeObservable` to create
+It defines observable and computed values on the class and then calls `makeObservable` to create
 getters/setters on the class instance. The only difference in defining the values on the class is
 that you need to use `.prop` modifier on observable/computed factories. Otherwise, the usage of MobX
 models is equivalent to Solid.js ones - just read the values inside `observer` function to make a
@@ -813,6 +811,16 @@ export const TodoList = ({ model }) => {
 
 ### Optimizing React re-renders with check flag
 
+The `check` flag in `observable` and `computed` constructors can be used to optimize React re-renders. It's useful when the result of your computed changes much less frequently than the source observable values. In this case, you can use the `check` flag to prevent unnecessary re-renders:
+
+```js
+// todos can change frequently
+const [todos, setTodos] = observable([]);
+
+// but the result of this computed changes much less frequently
+const isEmpty = computed(() => todos().length === 0, true);
+```
+
 ### Reaction scheduler
 
 The reaction scheduler is a function that's called at the end of the first transaction executed
@@ -821,27 +829,27 @@ scheduled" to run. The default implementation of the scheduler is a microtask Pr
 scheduler:
 
 ```js
-const reaction = (runner) => Promise.resolve().then(runner);
+const reactionScheduler = (runner) => Promise.resolve().then(runner);
 
-configure({ reaction });
+configure({ reactionScheduler });
 ```
 
 This is a good compromise between speed and developer experience, but sometimes you might want to
-run all reactions synchronously at transaction end (for example, this is done in the Onek test
+run all reactions synchronously at the transaction end (for example, this is done in the Onek test
 suite):
 
 ```js
-const reaction = (runner) => runner();
+const reactionScheduler = (runner) => runner();
 
-configure({ reaction });
+configure({ reactionScheduler });
 ```
 
 Another alternative to the default microtask scheduler is a **macro**task scheduler:
 
 ```js
-const reaction = (runner) => setTimeout(runner, 0);
+const reactionScheduler = (runner) => setTimeout(runner, 0);
 
-configure({ reaction });
+configure({ reactionScheduler });
 ```
 
 ### Reaction exception handler
@@ -861,15 +869,14 @@ configure({
 
 Onek does not have memory leaks while maintaining optimal caching for computed values. There is
 no `keepAlive` option like in `MobX`, and here's why. When a computed value has lost its last
-subscriber or is being read in untracked context without existing subscribers, it enters a **passive
+subscriber or is being read in an untracked context without existing subscribers, it enters a **passive
 ** state. This state means the computed is no longer referenced by any observable or other computed,
 but still holds references to its dependencies, so it can check later if some of them changed.
 
-How is the change detection possible without guarantees that values stored in observables and
-computeds are immutable? The answer is simple: along with the value, observable and computed store a
+How is change detection possible without guarantees that values stored in observable and computed value are immutable? The answer is simple: along with the value, observable and computed store a
 **revision** - an immutable plain object that is new each time an observable or computed is updated.
 This allows the implementation of `reselect`-like logic of checking computed dependencies with very small
-overhead and preserve cached values without any memory leaks.
+overhead and preserves cached values without any memory leaks.
 
 ## API Documentation
 
@@ -917,8 +924,8 @@ Creates a getter and setter for reactive value. The `value` argument is the valu
 observable instance, and the `checkFn`
 is a function that's used for checking if the new value from the setter is the same as the old one.
 
-The getter is a function that can accept a `ISubscriber` - return value of `useObserver` hook or the
-value of `instance`attribute of a computed getter.
+The getter is a function that can accept an `ISubscriber` - return value of `useObserver` hook or the
+value of `instance` attribute of a computed getter.
 
 The setter function can accept a `value` argument that can be of a generic type or an updater
 function that returns a value of the generic type.
@@ -939,6 +946,9 @@ function computed<T>(
 ): ComputedGetter<T>;
 ```
 
+Creates a getter for a computed value. The `fn` argument is a function that returns the computed.
+The `checkFn` argument is a function that's used for checking if the new value from the setter is the same as the old one. It can be `true` to use the built-in `shallowEquals` implementation.
+
 ### reaction
 
 ```ts
@@ -949,6 +959,8 @@ type Disposer = (() => void) & { run: () => void };
 function reaction(fn: () => Destructor, manager?: () => void): Disposer;
 ```
 
+Creates a reaction that runs the `fn` function and subscribes to all accessed observables and computed values. The `fn` function can return a **reaction destructor** - a function that's called before each reaction run and on the `disposer` call. If the `manager` function is specified, it's called instead of the reaction body. It should schedule the reaction to run later.
+
 ## action
 
 ```ts
@@ -957,17 +969,23 @@ function action<Args extends any[], T>(
 ): (...args: Args) => T;
 ```
 
+Creates an action that runs the `fn` function and batches all updates to observables and computed.
+
 ## tx
 
 ```ts
 function tx(fn: () => void): void;
 ```
 
+Executes the `fn` function immediately and batches all updates to observables and computed.
+
 ## utx
 
 ```ts
 function utx<T>(fn: () => T, subscriber = null): T;
 ```
+
+Executes the `fn` function immediately and batches all updates to observables and computed. The difference from `tx` is that it makes all observable and computed values accessed inside the `fn` untracked, so they won't make the component rerender or reaction run.
 
 ### untracked
 
@@ -977,17 +995,23 @@ function untracked<Args extends any[], T>(
 ): (...args: Args) => T;
 ```
 
+Creates a function that runs the `fn` function and makes all observable and computed values accessed inside the `fn` untracked, so they won't make the component rerender or reaction run.
+
 ### useObserver
 
 ```ts
 function useObserver(): ISubscriber | undefined;
 ```
 
+Returns the `ISubscriber` instance that is also a function. The resulting function can be used to wrap your component code with it or be passed as an argument to `observable` and `computed` getters to make the component rerender on their changes. Also, it can be called with `observable` or `computed` as an argument, it will also make the component rerender on their changes.
+
 ### shallowEquals
 
 ```ts
 function shallowEquals<T>(prev: T, next: T): boolean;
 ```
+
+Returns `true` if `prev` and `next` are equal. Supports plain objects, arrays, `Map` and `Set`.
 
 ## License
 
