@@ -118,37 +118,42 @@ export class Computed<T = any> implements IComputedImpl<T> {
         }
 
         if (this._state !== State.CLEAN) {
-            const oldState = this._state;
-            const wasInitialized = oldState !== State.NOT_INITIALIZED;
-            const wasNotPassive = oldState !== State.PASSIVE;
+            this._recompute(willHaveSubscriber);
+        }
+    }
 
-            const isActive = willHaveSubscriber || (wasInitialized && wasNotPassive);
+    _recompute(willHaveSubscriber: boolean): void {
+        const oldState = this._state;
+        
+        const wasInitialized = oldState !== State.NOT_INITIALIZED;
+        const wasNotPassive = oldState !== State.PASSIVE;
+        const isActive = willHaveSubscriber || (wasInitialized && wasNotPassive);
 
-            this._state = isActive ? State.COMPUTING : State.COMPUTING_PASSIVE;
+        // since we a re in dirty state, we can safely clear subscriptions without unsubscribing
+        this._subscriptions.clear();
 
-            this._subscriptions.clear();
+        const oldSubscriber = setSubscriber(this);
 
-            const oldSubscriber = setSubscriber(this);
+        this._state = isActive ? State.COMPUTING : State.COMPUTING_PASSIVE;
 
-            try {
-                const newValue = this._fn();
+        try {
+            const newValue = this._fn();
 
-                this._state = isActive ? State.CLEAN : State.PASSIVE;
+            this._state = isActive ? State.CLEAN : State.PASSIVE;
 
-                if (this._checkFn && wasInitialized) {
-                    if (this._checkFn(this._value!, newValue)) {
-                        return;
-                    }
-                    notify(this._subscribers, State.DIRTY);
+            if (this._checkFn && wasInitialized) {
+                if (this._checkFn(this._value!, newValue)) {
+                    return;
                 }
-                this._value = newValue;
-                this._revision = new Revision();
-            } catch (e) {
-                this.destroy();
-                throw e;
-            } finally {
-                setSubscriber(oldSubscriber);
+                notify(this._subscribers, State.DIRTY);
             }
+            this._value = newValue;
+            this._revision = new Revision();
+        } catch (e) {
+            this.destroy();
+            throw e;
+        } finally {
+            setSubscriber(oldSubscriber);
         }
     }
 
