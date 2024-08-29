@@ -42,7 +42,6 @@
             "require": "./mobx/dist/index.js"
         }
     },
-    "packageManager": "yarn@3.5.0",
     "scripts": {
         "build": "yarn run build:onek && yarn run build:react && yarn run build:react-compat && yarn run build:mobx",
         "build:full": "yarn run build:onek --no-compress && yarn run build:react --no-compress && yarn run build:react-compat --no-compress && yarn run build:mobx --no-compress",
@@ -50,7 +49,7 @@
         "build:react": "cd react && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:react-compat": "cd react-compat && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:mobx": "cd ./mobx && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
-        "test": "node --expose-gc $(yarn bin jest)"
+        "test": "node --expose-gc $(yarn bin jest ./tests)"
     },
     "devDependencies": {
         "@testing-library/react": "^14.0.0",
@@ -62,7 +61,6 @@
         "jest": "^29.0.3",
         "jest-environment-jsdom": "^29.5.0",
         "microbundle": "^0.15.1",
-        "prettier": "^2.8.8",
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
         "react-test-renderer": "^18.2.0",

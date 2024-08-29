@@ -3,12 +3,11 @@ import type {
     Disposer,
     IReactionImpl,
     IRevision,
-    NotifyState,
     ReactionFn,
     ISubscription,
 } from "../types";
 import { State } from "../constants";
-import { scheduleReaction, scheduleActualization } from "../schedulers";
+import { scheduleReaction } from "../schedulers";
 import { utx } from "../transaction";
 import { checkRevisions, subscribe, unsubscribe } from "./common";
 
@@ -19,7 +18,7 @@ export class Reaction implements IReactionImpl {
 
     private _subscriptions: Map<ISubscription, IRevision> = new Map();
     private _destructor: Destructor = null;
-    private _state = State.CLEAN as ReactionState;
+    private _state: ReactionState = State.CLEAN;
 
     constructor(private _fn: ReactionFn, private _manager?: () => void) {}
 
@@ -28,14 +27,10 @@ export class Reaction implements IReactionImpl {
             subscription._addSubscriber(this);
         }
 
-        this._subscriptions.set(subscription, subscription.revision());
+        this._subscriptions.set(subscription, subscription._getRevision());
     }
 
-    _notify(state: NotifyState): void {
-        if (state === State.MAYBE_DIRTY) {
-            return;
-        }
-
+    _notify(): void {
         if (this._state === State.CLEAN) {
             this._state = State.DIRTY;
             scheduleReaction(this);
@@ -43,7 +38,11 @@ export class Reaction implements IReactionImpl {
     }
 
     runManager(): void {
-        if (this._state === State.DESTROYED) {
+        const revisionsChanged = checkRevisions(this._subscriptions);
+
+        if (!revisionsChanged) {
+            this._state = State.CLEAN;
+            
             return;
         }
 
@@ -87,7 +86,7 @@ export class Reaction implements IReactionImpl {
 
     updateRevisions(): void {
         this._subscriptions.forEach((revision, subscription) => {
-            this._subscriptions.set(subscription, subscription.revision());
+            this._subscriptions.set(subscription, subscription._getRevision());
         });
     }
 

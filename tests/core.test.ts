@@ -25,7 +25,7 @@ const trackUpdate = (val: any) => {
     updatesMap.set(val, updates(val) + 1);
 };
 
-const computed = <T>(fn: () => T, checkFn?: boolean | CheckFn<T>) => {
+const computed = <T>(fn: () => T, checkFn: CheckFn<T> = () => false) => {
     const comp = _computed(() => {
         trackUpdate(comp);
         return fn();
@@ -105,7 +105,7 @@ describe("observable", () => {
     });
 
     it("defaults to shallowEqual when checkFn is boolean", () => {
-        const [o1, seto1] = observable<number>(1, true);
+        const [o1, seto1] = observable<number>(1, shallowEquals);
 
         const r1 = reaction(() => {
             o1();
@@ -133,13 +133,13 @@ describe("observable", () => {
     });
 
     it("observable.box return instance of Observable", () => {
-        const box = observable.box(1, true);
+        const box = observable.box(1, shallowEquals);
 
         expect(box).toBeInstanceOf(Observable);
     });
 
     it("observable.prop return instance of Observable ignoring type", () => {
-        const box = observable.prop(1, true);
+        const box = observable.prop(1, shallowEquals);
 
         expect(box).toBeInstanceOf(Observable);
     });
@@ -176,7 +176,9 @@ describe("computed", () => {
     it("invalidates on observable changes", () => {
         const [o1, seto1] = observable(5);
 
-        const c1 = computed(() => o1());
+        const c1 = computed(() => {
+            return o1();
+        });
 
         expect(c1()).toBe(5);
         expect(updates(c1)).toBe(1);
@@ -189,7 +191,7 @@ describe("computed", () => {
         seto1(10);
 
         expect(c1()).toBe(10);
-        expect(updates(c1)).toBe(3);
+        expect(updates(c1)).toBe(2);
     });
 
     it("triangle 1", () => {
@@ -402,7 +404,7 @@ describe("computed", () => {
         it("uses default shallowEquals when checkFn is boolean", () => {
             const [o1, seto1] = observable(1);
 
-            const c1 = computed(() => o1() * 2, true);
+            const c1 = computed(() => o1() * 2, shallowEquals);
 
             const r1 = reaction(() => {
                 c1();
@@ -546,19 +548,19 @@ describe("computed", () => {
             expect(updates(r1)).toBe(1);
 
             seto1(0); // same value
-            expect(updates(c1)).toBe(2);
-            expect(updates(c2)).toBe(2);
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto1(1); // new value
-            expect(updates(c1)).toBe(3);
-            expect(updates(c2)).toBe(3);
+            expect(updates(c1)).toBe(2);
+            expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
 
-            seto1(1); // same value after new value
-            expect(updates(c1)).toBe(4);
-            expect(updates(c2)).toBe(4);
-            expect(updates(r1)).toBe(2);
+            seto1(2); // new value
+            expect(updates(c1)).toBe(3);
+            expect(updates(c2)).toBe(3);
+            expect(updates(r1)).toBe(3);
         });
 
         it("chain o -> c -> v -> c -> r", () => {
@@ -587,20 +589,20 @@ describe("computed", () => {
             expect(updates(r1)).toBe(1);
 
             seto1(0); // same value
-            expect(updates(c1)).toBe(2);
-            expect(updates(c2)).toBe(2);
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(1);
             expect(updates(c3)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto1(1); // new value
-            expect(updates(c1)).toBe(3);
-            expect(updates(c2)).toBe(3);
+            expect(updates(c1)).toBe(2);
+            expect(updates(c2)).toBe(2);
             expect(updates(c3)).toBe(2);
             expect(updates(r1)).toBe(2);
 
             seto1(1); // same value after new value
-            expect(updates(c1)).toBe(4);
-            expect(updates(c2)).toBe(4);
+            expect(updates(c1)).toBe(2);
+            expect(updates(c2)).toBe(2);
             expect(updates(c3)).toBe(2);
             expect(updates(r1)).toBe(2);
         });
@@ -628,19 +630,19 @@ describe("computed", () => {
 
             seto1(0);
 
-            expect(updates(c1)).toBe(2);
+            expect(updates(c1)).toBe(1);
             expect(updates(c2)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto1(1);
 
-            expect(updates(c1)).toBe(3);
+            expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
 
             seto1(1);
 
-            expect(updates(c1)).toBe(4);
+            expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
         });
@@ -682,19 +684,19 @@ describe("computed", () => {
             expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
 
-            seto1(3);
+            seto1(5);
 
-            expect(c2()).toBe(1);
+            expect(c2()).toBe(3);
             expect(updates(c1)).toBe(4);
             expect(updates(c2)).toBe(3);
-            expect(updates(r1)).toBe(2);
+            expect(updates(r1)).toBe(3);
 
             seto1(1);
 
             expect(c2()).toBe(1);
             expect(updates(c1)).toBe(5);
             expect(updates(c2)).toBe(4);
-            expect(updates(r1)).toBe(2);
+            expect(updates(r1)).toBe(4);
         });
 
         it("transaction test 1", () => {
@@ -767,19 +769,19 @@ describe("computed", () => {
 
             seto1(0);
 
-            expect(updates(c1)).toBe(2);
+            expect(updates(c1)).toBe(1);
             expect(updates(c2)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto2(2);
 
-            expect(updates(c1)).toBe(2);
-            expect(updates(c1)).toBe(2);
-            expect(updates(c1)).toBe(2);
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(2);
+            expect(updates(r1)).toBe(2);
 
             seto1(1);
 
-            expect(updates(c1)).toBe(3);
+            expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(3);
             expect(updates(r1)).toBe(3);
         });
@@ -809,14 +811,14 @@ describe("computed", () => {
 
             seto1(0);
 
-            expect(updates(c1)).toBe(2);
-            expect(updates(c2)).toBe(2);
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto1(1);
 
-            expect(updates(c1)).toBe(3);
-            expect(updates(c2)).toBe(3);
+            expect(updates(c1)).toBe(2);
+            expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
         });
 
@@ -844,17 +846,23 @@ describe("computed", () => {
 
             seto1(0);
 
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(1);
+            expect(updates(r1)).toBe(1);
+
+            seto1(1);
+
             expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(2);
-            expect(updates(r1)).toBe(1);
+            expect(updates(r1)).toBe(2);
         });
 
         it("multiple sources", () => {
             const [o1, seto1] = observable(1);
             const [o2, seto2] = observable(2);
 
-            const c1 = computed(() => o1() * 2, true);
-            const c2 = computed(() => o2() * 2, true);
+            const c1 = computed(() => o1() * 2, shallowEquals);
+            const c2 = computed(() => o2() * 2, shallowEquals);
 
             const c3 = computed(() => c1() + c2());
 
@@ -997,18 +1005,6 @@ describe("computed", () => {
             // @ts-ignore
             const weakRef = new WeakRef(c1);
 
-            // Set up the FinalizationRegistry
-            // @ts-ignore
-            const registry = new FinalizationRegistry((resolve: () => void) => {
-                // This callback will be called when the object is garbage-collected
-                resolve();
-            });
-
-            // Create a promise and register the object with the resolve function
-            const gcPromise = new Promise<void>((resolve) => {
-                registry.register(c1!, resolve);
-            });
-
             c1();
 
             // Release the strong reference to the object
@@ -1019,9 +1015,6 @@ describe("computed", () => {
                 global.gc?.();
                 await new Promise((r) => setTimeout(r, 50));
             }
-
-            // Wait for the FinalizationRegistry callback to be called
-            await gcPromise;
 
             // Check if the object was garbage-collected
             expect(weakRef.deref()).toBeUndefined();
@@ -1059,7 +1052,7 @@ describe("computed", () => {
     });
 
     it("computed.box returns instance of Computed", () => {
-        const c1 = _computed.box(() => 1, true);
+        const c1 = _computed.box(() => 1, shallowEquals);
 
         expect(c1).toBeInstanceOf(Computed);
     });
@@ -1090,7 +1083,7 @@ describe("reaction", () => {
 
         seto1(2);
 
-        expect(updates(r1)).toBe(3);
+        expect(updates(r1)).toBe(2);
 
         // @ts-ignore
         r1 && r1();
@@ -1115,13 +1108,13 @@ describe("reaction", () => {
 
         seto1(2);
 
-        expect(updates(c1)).toBe(3);
-        expect(updates(r1)).toBe(3);
+        expect(updates(c1)).toBe(2);
+        expect(updates(r1)).toBe(2);
 
         r1.run();
 
-        expect(updates(c1)).toBe(3);
-        expect(updates(r1)).toBe(4);
+        expect(updates(c1)).toBe(2);
+        expect(updates(r1)).toBe(3);
 
         r1();
     });
@@ -1638,7 +1631,7 @@ describe("shallowEquals", () => {
     test("arrays: unequal shallow arrays", () => {
         expect(shallowEquals([1, 2, 3], [1, 2, 4])).toBe(false);
         expect(shallowEquals(["a", "b", "c"], ["a", "b"])).toBe(false);
-        expect(shallowEquals([true, false], [false, true])).toBe(false);
+        expect(shallowEquals([true, false], [false, shallowEquals])).toBe(false);
     });
 
     test("plain objects: equal shallow objects", () => {
@@ -1700,12 +1693,12 @@ describe("shallowEquals", () => {
         ).toBe(true);
         expect(
             shallowEquals(
-                new Map([
-                    ["a", true],
+                new Map<string, any>([
+                    ["a", shallowEquals],
                     ["b", false],
                 ]),
-                new Map([
-                    ["a", true],
+                new Map<string, any>([
+                    ["a", shallowEquals],
                     ["b", false],
                 ])
             )

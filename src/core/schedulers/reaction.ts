@@ -1,7 +1,6 @@
 import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck } from "./subscribersCheck";
-import { actualizationQueue, runActualizations } from "./stateActualization";
 
 let reactionQueue: Array<Reaction> = [];
 let isReactionRunScheduled = false;
@@ -28,9 +27,7 @@ export function scheduleReaction(reaction: Reaction) {
 function runReactions(): void {
     try {
         let i = MAX_REACTION_ITERATIONS;
-        while ((reactionQueue.length || actualizationQueue.size) && --i) {
-            runActualizations();
-
+        while ((reactionQueue.length) && --i) {
             const reactions = reactionQueue;
             reactionQueue = [];
             reactions.forEach((reaction) => {
@@ -53,7 +50,7 @@ function runReactions(): void {
 }
 
 export function scheduleReactionRunner(): void {
-    const shouldRunReactions = reactionQueue.length || actualizationQueue.size;
+    const shouldRunReactions = reactionQueue.length;
 
     if (!isReactionRunScheduled && shouldRunReactions) {
         isReactionRunScheduled = true;

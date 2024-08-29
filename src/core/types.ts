@@ -1,7 +1,3 @@
-import { State } from "./constants";
-
-export type NotifyState = State.MAYBE_DIRTY | State.DIRTY;
-
 export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     ? (...args: Args) => R
     : never;
@@ -11,27 +7,27 @@ export interface SubscriberBase {
 }
 
 export interface ISubscriber extends SubscriberBase {
-    _notify(state: NotifyState): void;
+    _notify(): void;
 }
 
 export interface ISubscription {
-    revision(): IRevision;
+    _getRevision(): IRevision;
 
     _addSubscriber(subscriber: ISubscriber): void;
 
     _removeSubscriber(subscriber: ISubscriber): void;
-
-    _actualize(willHaveSubscriber: boolean): void;
 }
 
-export interface IRevision {}
+export interface IRevision {
+    id: number;
+}
 
 export type MaybeSubscriber = ISubscriber | null;
 
 export interface IGettable<T> {
     get(_subscriber?: ISubscriber): T;
 
-    revision(): IRevision;
+    _getRevision(): IRevision;
 }
 
 export interface IObservable<T> extends IGettable<T> {

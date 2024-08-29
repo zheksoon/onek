@@ -5,7 +5,7 @@ export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
     let revisionsChanged = false;
 
     subscriptions.forEach((revision, subscription) => {
-        revisionsChanged ||= subscription.revision() !== revision;
+        revisionsChanged ||= subscription._getRevision() !== revision;
     });
 
     return revisionsChanged;
@@ -29,8 +29,8 @@ export function subscribe(
     });
 }
 
-export function notify(subscribers: Set<ISubscriber>, state: NotifyState): void {
+export function notify(subscribers: Set<ISubscriber>): void {
     subscribers.forEach((subscriber) => {
-        subscriber._notify(state);
+        subscriber._notify();
     });
 }

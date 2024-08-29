@@ -13,7 +13,6 @@ import { Computed } from "./computed";
 import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
-import { untrackedShallowEquals } from "../utils";
 import { notify } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
@@ -21,15 +20,11 @@ export class Observable<T = any> implements IObservableImpl<T> {
     private _subscribers: Set<ISubscriber> = new Set();
 
     private declare _value: T;
-    private declare readonly _checkFn?: CheckFn<T>;
+    private declare readonly _checkFn: CheckFn<T>;
 
-    constructor(value: T, checkFn?: boolean | CheckFn<T>) {
+    constructor(value: T, checkFn = Object.is) {
         this._value = value;
-        this._checkFn = checkFn
-            ? typeof checkFn === "function"
-                ? withUntracked(checkFn)
-                : untrackedShallowEquals
-            : undefined;
+        this._checkFn = withUntracked(checkFn);
     }
 
     _addSubscriber(subscriber: ISubscriber): void {
@@ -40,11 +35,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
         this._subscribers.delete(subscriber);
     }
 
-    _actualize(): void {
-        // noop
-    }
-
-    revision(): IRevision {
+    _getRevision(): IRevision {
         return this._revision;
     }
 
@@ -52,6 +43,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
         if (_subscriber) {
             _subscriber.addSubscription(this);
         }
+        
         return this._value;
     }
 
@@ -65,7 +57,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
                 newValue = (newValue as UpdaterFn<T>)(this._value);
             }
 
-            if (this._checkFn && this._checkFn(this._value, newValue as T)) {
+            if (this._checkFn(this._value, newValue as T)) {
                 return;
             }
 
@@ -78,26 +70,26 @@ export class Observable<T = any> implements IObservableImpl<T> {
     notify(): void {
         this._revision = new Revision();
 
-        notify(this._subscribers, State.DIRTY);
+        notify(this._subscribers);
         endTx();
     }
 }
 
-export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
+export function observable<T>(value: T, checkFn?: CheckFn<T>) {
     const obs = new Observable(value, checkFn);
     const get = obs.get.bind(obs) as IObservableGetter<T>;
     const set = obs.set.bind(obs) as ISetter<T>;
 
     get.instance = obs;
-    get.revision = obs.revision.bind(obs);
+    get.revision = obs._getRevision.bind(obs);
 
     return [get, set] as const;
 }
 
-observable.box = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
+observable.box = <T>(value: T, checkFn?: CheckFn<T>): IObservable<T> => {
     return new Observable(value, checkFn);
 };
 
-observable.prop = <T>(value: T, checkFn?: boolean | CheckFn<T>): T => {
+observable.prop = <T>(value: T, checkFn?: CheckFn<T>): T => {
     return new Observable(value, checkFn) as unknown as T;
 };
