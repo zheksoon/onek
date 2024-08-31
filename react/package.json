@@ -18,12 +18,14 @@
     },
     "peerDependencies": {
         "onek": "*",
-        "react": ">=18.0.0"
+        "react": ">=18.0.0",
+        "react-dom": ">=18.0.0"
     },
     "devDependencies": {
         "@types/react": ">=18.0.0",
         "onek": "link:../",
-        "react": ">=18.0.0"
+        "react": ">=18.0.0",
+        "react-dom": ">=18.0.0"
     },
     "minify": {
         "mangle": {

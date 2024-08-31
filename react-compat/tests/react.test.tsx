@@ -1,9 +1,7 @@
-/**
- * @jest-environment jsdom
- */
 
 import * as React from "react";
 import { render } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { computed, observable } from "onek";
 import { useObserver } from "../src";
 

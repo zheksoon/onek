@@ -1,4 +1,4 @@
-import { NotifyState, ISubscriber, ISubscription } from "../types";
+import { ISubscriber, ISubscription } from "../types";
 import { Revision } from "./revision";
 
 export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {

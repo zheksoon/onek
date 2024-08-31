@@ -1,7 +1,7 @@
 {
     "name": "onek",
     "version": "0.1.7",
-    "description": "⚡️1.8KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
+    "description": "⚡️ 1.8KB full-featured state management inspired by MobX and Solid, batteries included ⚡️",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/zheksoon/onek.git"
@@ -49,17 +49,20 @@
         "build:react": "cd react && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:react-compat": "cd react-compat && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:mobx": "cd ./mobx && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
-        "test": "node --expose-gc $(yarn bin jest ./tests)"
+        "test": "node --expose-gc $(yarn bin jest)"
     },
     "devDependencies": {
-        "@testing-library/react": "^14.0.0",
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.5.0",
+        "@testing-library/react": "^16.0.1",
         "@types/jest": "^29.4.0",
         "@types/node": "^20.1.0",
         "@types/react": ">=18.0.0",
         "@types/react-dom": ">=18.0.0",
         "@types/react-test-renderer": "^18.0.0",
-        "jest": "^29.0.3",
-        "jest-environment-jsdom": "^29.5.0",
+        "import": "^0.0.6",
+        "jest": "^29.7.0",
+        "jest-environment-jsdom": "^29.7.0",
         "microbundle": "^0.15.1",
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
@@ -131,8 +134,12 @@
                 "Observable",
                 "Computed",
                 "Reaction",
-                "Revision"
+                "Revision",
+                "observable",
+                "computed",
+                "reaction"
             ]
         }
-    }
+    },
+    "dependencies": {}
 }
