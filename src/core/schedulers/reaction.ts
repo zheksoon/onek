@@ -2,7 +2,8 @@ import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 import { runSubscribersCheck } from "./subscribersCheck";
 
-let reactionQueue: Array<Reaction> = [];
+let reactionQueue = new Set<Reaction>();
+let swapQueue = new Set<Reaction>();
 let isReactionRunScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
@@ -21,15 +22,19 @@ export function setReactionExceptionHandler(handler: typeof reactionExceptionHan
 }
 
 export function scheduleReaction(reaction: Reaction) {
-    reactionQueue.push(reaction);
+    reactionQueue.add(reaction);
 }
 
 function runReactions(): void {
     try {
         let i = MAX_REACTION_ITERATIONS;
-        while ((reactionQueue.length) && --i) {
+
+        // trying not to allocate JS objects here
+        while ((reactionQueue.size || swapQueue.size) && --i) {
             const reactions = reactionQueue;
-            reactionQueue = [];
+
+            reactionQueue = swapQueue;
+
             reactions.forEach((reaction) => {
                 try {
                     reaction.runManager();
@@ -37,22 +42,26 @@ function runReactions(): void {
                     reactionExceptionHandler(exception);
                 }
             });
+
+            reactions.clear();
+
+            swapQueue = reactions;
         }
+
         if (!i) {
             throw new Error("Infinite reactions loop");
         }
     } finally {
         isReactionRunScheduled = false;
-        reactionQueue = [];
+        reactionQueue.clear();
+        swapQueue.clear();
 
         runSubscribersCheck();
     }
 }
 
 export function scheduleReactionRunner(): void {
-    const shouldRunReactions = reactionQueue.length;
-
-    if (!isReactionRunScheduled && shouldRunReactions) {
+    if (!isReactionRunScheduled && reactionQueue.size) {
         isReactionRunScheduled = true;
         reactionScheduler(runReactions);
     }

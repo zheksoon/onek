@@ -40,7 +40,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
     }
 
     _addSubscriber(subscriber: ISubscriber): void {
-        if (!this._subscribers.size) {
+        if (!this._subscribers.size && this._state === State.DIRTY) {
             subscribe(this._subscriptions, this);
         }
 

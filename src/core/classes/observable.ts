@@ -8,7 +8,6 @@ import type {
     ISubscriber,
     UpdaterFn,
 } from "../types";
-import { State } from "../constants";
 import { Computed } from "./computed";
 import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
