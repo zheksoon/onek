@@ -4,7 +4,7 @@ export type {
     IComputed,
     IReaction,
     IRevision,
-    CheckFn,
+    Equals as CheckFn,
     UpdaterFn,
     IGetter,
     IObservableGetter,

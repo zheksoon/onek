@@ -7,3 +7,7 @@ export class Revision implements IRevision {
 
     public id = revisionId++;
 }
+
+export function getRevision(): IRevision {
+    return new Revision();
+}

@@ -1,7 +1,6 @@
-import { ISubscriber, ISubscription } from "../types";
-import { Revision } from "./revision";
+import { IRevision, ISubscriber, ISubscription } from "../types";
 
-export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
+export function revisionsChanged(subscriptions: Map<ISubscription, IRevision>) {
     let revisionsChanged = false;
 
     subscriptions.forEach((revision, subscription) => {
@@ -12,7 +11,7 @@ export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
 }
 
 export function unsubscribe(
-    subscriptions: Map<ISubscription, Revision>,
+    subscriptions: Map<ISubscription, IRevision>,
     subscriber: ISubscriber
 ): void {
     subscriptions.forEach((_revision, subscription) => {
@@ -21,7 +20,7 @@ export function unsubscribe(
 }
 
 export function subscribe(
-    subscriptions: Map<ISubscription, Revision>,
+    subscriptions: Map<ISubscription, IRevision>,
     subscriber: ISubscriber
 ): void {
     subscriptions.forEach((_revision, subscription) => {

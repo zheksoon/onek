@@ -1,5 +1,5 @@
 import type {
-    CheckFn,
+    Equals,
     IObservable,
     IObservableGetter,
     IObservableImpl,
@@ -9,21 +9,21 @@ import type {
     UpdaterFn,
 } from "../types";
 import { Computed } from "./computed";
-import { Revision } from "./revision";
+import { getRevision } from "./revision";
 import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
 import { notify } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
-    private _revision: IRevision = new Revision();
+    private _revision: IRevision = getRevision();
     private _subscribers: Set<ISubscriber> = new Set();
 
     private declare _value: T;
-    private declare readonly _checkFn: CheckFn<T>;
+    private declare readonly _equals: Equals<T>;
 
-    constructor(value: T, checkFn = Object.is) {
+    constructor(value: T, equals = Object.is) {
         this._value = value;
-        this._checkFn = withUntracked(checkFn);
+        this._equals = withUntracked(equals);
     }
 
     _addSubscriber(subscriber: ISubscriber): void {
@@ -38,25 +38,25 @@ export class Observable<T = any> implements IObservableImpl<T> {
         return this._revision;
     }
 
-    get(_subscriber = subscriber): T {
-        if (_subscriber) {
-            _subscriber.addSubscription(this);
+    get(): T {
+        if (subscriber) {
+            subscriber.addSubscription(this);
         }
         
         return this._value;
     }
 
     set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
-        if (subscriber && subscriber instanceof Computed) {
+        if (subscriber instanceof Computed) {
             throw new Error("Changing observable inside of computed");
         }
 
         if (arguments.length > 0) {
             if (typeof newValue === "function" && !asIs) {
                 newValue = (newValue as UpdaterFn<T>)(this._value);
-            }
+            }   
 
-            if (this._checkFn(this._value, newValue as T)) {
+            if (this._equals(this._value, newValue as T)) {
                 return;
             }
 
@@ -67,14 +67,15 @@ export class Observable<T = any> implements IObservableImpl<T> {
     }
 
     notify(): void {
-        this._revision = new Revision();
+        this._revision = getRevision();
 
         notify(this._subscribers);
+        
         endTx();
     }
 }
 
-export function observable<T>(value: T, checkFn?: CheckFn<T>) {
+export function observable<T>(value: T, checkFn?: Equals<T>) {
     const obs = new Observable(value, checkFn);
     const get = obs.get.bind(obs) as IObservableGetter<T>;
     const set = obs.set.bind(obs) as ISetter<T>;
@@ -85,10 +86,10 @@ export function observable<T>(value: T, checkFn?: CheckFn<T>) {
     return [get, set] as const;
 }
 
-observable.box = <T>(value: T, checkFn?: CheckFn<T>): IObservable<T> => {
+observable.box = <T>(value: T, checkFn?: Equals<T>): IObservable<T> => {
     return new Observable(value, checkFn);
 };
 
-observable.prop = <T>(value: T, checkFn?: CheckFn<T>): T => {
+observable.prop = <T>(value: T, checkFn?: Equals<T>): T => {
     return new Observable(value, checkFn) as unknown as T;
 };

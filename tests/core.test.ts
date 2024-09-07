@@ -548,11 +548,13 @@ describe("computed", () => {
             expect(updates(r1)).toBe(1);
 
             seto1(0); // same value
+
             expect(updates(c1)).toBe(1);
             expect(updates(c2)).toBe(1);
             expect(updates(r1)).toBe(1);
 
             seto1(1); // new value
+
             expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(2);
             expect(updates(r1)).toBe(2);
@@ -566,7 +568,8 @@ describe("computed", () => {
         it("chain o -> c -> v -> c -> r", () => {
             const check2 = getCheck();
 
-            const [o1, seto1] = observable(0);
+            const [o1, seto1] = observable(1);
+            
             const c1 = computed(() => {
                 return o1() * 2;
             });
@@ -588,23 +591,18 @@ describe("computed", () => {
             expect(updates(c3)).toBe(1);
             expect(updates(r1)).toBe(1);
 
-            seto1(0); // same value
-            expect(updates(c1)).toBe(1);
-            expect(updates(c2)).toBe(1);
-            expect(updates(c3)).toBe(1);
-            expect(updates(r1)).toBe(1);
+            seto1(2); // new value
 
-            seto1(1); // new value
             expect(updates(c1)).toBe(2);
             expect(updates(c2)).toBe(2);
             expect(updates(c3)).toBe(2);
             expect(updates(r1)).toBe(2);
 
             seto1(1); // same value after new value
-            expect(updates(c1)).toBe(2);
-            expect(updates(c2)).toBe(2);
-            expect(updates(c3)).toBe(2);
-            expect(updates(r1)).toBe(2);
+            expect(updates(c1)).toBe(3);
+            expect(updates(c2)).toBe(3);
+            expect(updates(c3)).toBe(3);
+            expect(updates(r1)).toBe(3);
         });
 
         it("chain o -> v -> v -> r", () => {

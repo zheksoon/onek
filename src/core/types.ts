@@ -18,14 +18,12 @@ export interface ISubscription {
     _removeSubscriber(subscriber: ISubscriber): void;
 }
 
-export interface IRevision {
-    id: number;
-}
+export type IRevision = {};
 
 export type MaybeSubscriber = ISubscriber | null;
 
 export interface IGettable<T> {
-    get(_subscriber?: ISubscriber): T;
+    get(): T;
 
     _getRevision(): IRevision;
 }
@@ -68,7 +66,7 @@ export interface IReaction {
 
 export interface IReactionImpl extends IReaction, ISubscriber {}
 
-export type CheckFn<T> = (prev: T, next: T) => boolean;
+export type Equals<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;
 
 export interface IGetter<T> {

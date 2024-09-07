@@ -9,7 +9,7 @@ import type {
 import { State } from "../constants";
 import { scheduleReaction } from "../schedulers";
 import { utx } from "../transaction";
-import { checkRevisions, subscribe, unsubscribe } from "./common";
+import { revisionsChanged, subscribe, unsubscribe } from "./common";
 
 type ReactionState = State.CLEAN | State.DIRTY | State.DESTROYED;
 
@@ -38,9 +38,7 @@ export class Reaction implements IReactionImpl {
     }
 
     runManager(): void {
-        const revisionsChanged = checkRevisions(this._subscriptions);
-
-        if (!revisionsChanged) {
+        if (!revisionsChanged(this._subscriptions)) {
             this._state = State.CLEAN;
             
             return;
@@ -70,7 +68,7 @@ export class Reaction implements IReactionImpl {
     }
 
     missedRun(): boolean {
-        return checkRevisions(this._subscriptions);
+        return revisionsChanged(this._subscriptions);
     }
 
     destroy(): void {
