@@ -9,10 +9,10 @@ import type {
 } from "../types";
 import { State } from "../constants";
 import { setSubscriber, subscriber } from "../subscriber";
-import { scheduleSubscribersCheck } from "../schedulers";
 import { withUntracked } from "../transaction";
 import { getRevision } from "./revision";
-import { revisionsChanged, notify, subscribe, unsubscribe } from "./common";
+import { notify, unsubscribe, revisionsChanged } from "./common";
+import { register } from "./registry";
 
 type ComputedState =
     | State.CLEAN
@@ -21,10 +21,12 @@ type ComputedState =
     | State.DIRTY
 
 export class Computed<T = any> implements IComputedImpl<T> {
+    readonly _weakRef = new WeakRef(this);
+    readonly _subscriptions: Map<ISubscription, IRevision> = new Map();
+
     private _value: T | undefined = undefined;
     private _revision: IRevision = getRevision();
-    private readonly _subscribers: Set<ISubscriber> = new Set();
-    private readonly _subscriptions: Map<ISubscription, IRevision> = new Map();
+    private readonly _subscribers: Set<WeakRef<ISubscriber>> = new Set();
     private _state: ComputedState = State.NOT_INITIALIZED;
 
     private declare readonly _fn: () => T;
@@ -33,98 +35,61 @@ export class Computed<T = any> implements IComputedImpl<T> {
     constructor(fn: () => T, equals: Equals<T> = Object.is) {
         this._fn = fn;
         this._equals = withUntracked(equals);
+
+        register(this, this._subscriptions);
     }
 
-    addSubscription(subscription: ISubscription): void {
-        this._subscriptions.set(subscription, subscription._getRevision());
-
-        // Let the subscription add a direct reference to us only when we have a subscriber
-        // So if we are passive, there will be no memory leaks because nobody refers to us
-        if (this._subscribers.size) {
-            subscription._addSubscriber(this);
-        }
-    }
-
-    _addSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.add(subscriber);
+    _addSubscriber(subscriberRef: WeakRef<ISubscriber>): void {
+        this._subscribers.add(subscriberRef);
 
         // Recalculate the value and update revision due to the new subscriber
         // This will reset the DIRTY state to CLEAN
-        this._getRevision();
+        // this._getRevision();
     }
 
-    _removeSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.delete(subscriber);
-
-        // If we've lost our last subscriber, schedule the check process
-        // Because the most frequent case when someone unsubscribes and subscribes again
-        // Without the check, we will do cascade unsubscriptions, which is highly non-performant
-        if (!this._subscribers.size) {
-            scheduleSubscribersCheck(this);
-        }
-    }
-
-    _checkAndPassivate(): void {
-        // After all reactions are done and we lost all our subscribers
-        // enter the passive state when we have to check revisions each time on access
-        if (!this._subscribers.size) {
-            unsubscribe(this._subscriptions, this);
-
-            this._state = State.DIRTY;
-        }
+    _removeSubscriber(subscriberRef: WeakRef<ISubscriber>): void {
+        this._subscribers.delete(subscriberRef);
     }
 
     _notify() {
-        // Unsubscribing means nobody can notify as after this 
-        // as all references to us are removed
-        unsubscribe(this._subscriptions, this);
-
-        notify(this._subscribers);
-
-        this._state = State.DIRTY;
+        if (this._state === State.CLEAN) {
+            this._state = State.DIRTY;
+            notify(this._subscribers);
+        }
     }
 
     _getRevision(): IRevision {
-        // NOT_INITIALIZED means we have no subscriptions at all, so recompute without checks
-        if (this._state === State.NOT_INITIALIZED) {
-            this._value = this._recompute();
+        if (this._state === State.CLEAN) {
+            return this._revision;
         }
 
-        // DIRTY means we have no active subscriptions, so we can rely on it
-        if (this._state === State.DIRTY) {
-            // we check the revisions of subscriptions passively
+        if (this._state === State.NOT_INITIALIZED) {
+            let result = this._recompute();
+            this._value = result;
+            this._revision = getRevision();
+        } else if (this._state === State.DIRTY) {
             if (revisionsChanged(this._subscriptions)) {
-                // recompute will subscribe or not subscribe to subscriptions
-                // depending on our subscribers size
                 let result = this._recompute();
-
-                // assign a new value and revision if the value is changed
                 if (!this._equals(this._value!, result)) {
                     this._value = result;
                     this._revision = getRevision();
                 }
-            } else 
-            // this branch means revisions aren't changed, but because we are unsubscribed
-            // we need to subscribe again if there is at least one subscriber
-            if (this._subscribers.size) {
-                subscribe(this._subscriptions, this);
             }
         }
 
-        // if there is no subscribers, make us dirty again, so we will check revisions
-        // and recompute if needed on the next access
-        this._state = this._subscribers.size ? State.CLEAN : State.DIRTY;
+        this._state = State.CLEAN;
 
         return this._revision;
     }
 
     _recompute(): T {
-        // We are recomputing only when we are dirty or not initialized
-        // so this means we are unsubscribed from everyone at the moment
+        // Unsubscribe from all current subscriptions before recomputing,
+        // so we start fresh and only subscribe to what we actually read.
+        unsubscribe(this._subscriptions, this);
         this._subscriptions.clear();
 
         const stateBefore = this._state;
-        
+
         this._state = State.COMPUTING;
 
         const oldSubscriber = setSubscriber(this);
@@ -132,7 +97,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
         try {
             const result = this._fn();
 
-            // We will return to previous state only when there is not exception
+            // We will return to previous state only when there is no exception
             this._state = stateBefore;
 
             return result;
@@ -150,7 +115,7 @@ export class Computed<T = any> implements IComputedImpl<T> {
         // Remove all our subscriptions and enter NOT_INITIALIZED state
         // as if we are brand new computed :)
         unsubscribe(this._subscriptions, this);
-        
+
         this._subscriptions.clear();
         this._state = State.NOT_INITIALIZED;
         this._value = undefined;
@@ -163,16 +128,12 @@ export class Computed<T = any> implements IComputedImpl<T> {
             throw new Error("Recursive computed call");
         }
 
-        // Ask subscriber for add us to subscriptions, and if it has subscribers,
-        // it will add itself to our subscribers
-        // This means we will know if the subscriber is passive, so we will behave
-        // accordingly when recomputing
-        if (subscriber) {
-            subscriber.addSubscription(this);
-        }
+        const revision = this._getRevision();
 
-        // this will check revisions and actualize our value if needed
-        this._getRevision();
+        if (subscriber) {
+            subscriber._subscriptions.set(this, revision);
+            this._subscribers.add(subscriber._weakRef);
+        }
 
         return this._value!;
     }

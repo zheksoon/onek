@@ -1,6 +1,5 @@
 import { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
-import { runSubscribersCheck } from "./subscribersCheck";
 
 let reactionQueue = new Set<Reaction>();
 let swapQueue = new Set<Reaction>();
@@ -35,13 +34,13 @@ function runReactions(): void {
 
             reactionQueue = swapQueue;
 
-            reactions.forEach((reaction) => {
+            for (const reaction of reactions) {
                 try {
                     reaction.runManager();
                 } catch (exception: any) {
                     reactionExceptionHandler(exception);
                 }
-            });
+            }
 
             reactions.clear();
 
@@ -55,8 +54,6 @@ function runReactions(): void {
         isReactionRunScheduled = false;
         reactionQueue.clear();
         swapQueue.clear();
-
-        runSubscribersCheck();
     }
 }
 

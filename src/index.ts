@@ -13,7 +13,6 @@ export type {
     IOptions,
     Disposer,
     ReactionFn,
-    SubscriberBase,
 } from "./core/types";
 export {
     observable,
@@ -22,7 +21,7 @@ export {
     Computed,
     reaction,
     Reaction,
-    Revision,
+    getRevision,
     tx,
     utx,
     untracked,

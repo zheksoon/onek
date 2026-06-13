@@ -2,23 +2,22 @@ export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     ? (...args: Args) => R
     : never;
 
-export interface SubscriberBase {
-    addSubscription(subscription: ISubscription): void;
-}
+export interface ISubscriber {
+    readonly _weakRef: WeakRef<ISubscriber>;
+    readonly _subscriptions: Map<ISubscription, IRevision>;
 
-export interface ISubscriber extends SubscriberBase {
     _notify(): void;
 }
 
 export interface ISubscription {
     _getRevision(): IRevision;
 
-    _addSubscriber(subscriber: ISubscriber): void;
+    _addSubscriber(subscriberRef: WeakRef<ISubscriber>): void;
 
-    _removeSubscriber(subscriber: ISubscriber): void;
+    _removeSubscriber(subscriberRef: WeakRef<ISubscriber>): void;
 }
 
-export type IRevision = {};
+export type IRevision = number;
 
 export type MaybeSubscriber = ISubscriber | null;
 
@@ -34,15 +33,13 @@ export interface IObservable<T> extends IGettable<T> {
     notify(): void;
 }
 
-export interface IObservableImpl<T> extends IObservable<T>, ISubscription {}
+export interface IObservableImpl<T> extends IObservable<T>, ISubscription { }
 
 export interface IComputed<T> extends IGettable<T> {
     destroy(): void;
 }
 
-export interface IComputedImpl<T> extends IComputed<T>, ISubscriber, ISubscription {
-    _checkAndPassivate(): void;
-}
+export interface IComputedImpl<T> extends IComputed<T>, ISubscriber, ISubscription { }
 
 export type Destructor = (() => void) | null | undefined | void;
 export type ReactionFn = () => Destructor;
@@ -55,16 +52,10 @@ export interface IReaction {
 
     runManager(): void;
 
-    subscribe(): void;
-
-    unsubscribe(): void;
-
     unsubscribeAndCleanup(): void;
-
-    updateRevisions(): void;
 }
 
-export interface IReactionImpl extends IReaction, ISubscriber {}
+export interface IReactionImpl extends IReaction, ISubscriber { }
 
 export type Equals<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;

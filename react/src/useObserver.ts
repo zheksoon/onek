@@ -1,10 +1,10 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { Reaction, Revision, setSubscriber, SubscriberBase } from "onek";
+import { Reaction, getRevision, setSubscriber } from "onek";
 
 type NotifyFn = () => void;
 type UnsubscribeFn = () => void;
 
-export interface IObserver extends SubscriberBase {
+export interface IObserver {
     <T>(callback: () => T): T;
 }
 
@@ -14,7 +14,6 @@ const EMPTY_ARRAY = [] as const;
 const NOOP = (value?: any) => value;
 
 const NOOP_OBSERVER: IObserver = (callback) => callback();
-NOOP_OBSERVER.addSubscription = NOOP;
 
 export function useObserver(): IObserver {
     if (!isInBrowser) {
@@ -22,18 +21,16 @@ export function useObserver(): IObserver {
     }
 
     const store = useMemo(() => {
-        let revision = new Revision();
+        let revision = getRevision();
         let subscribers = new Set<NotifyFn>();
 
         const reaction = new Reaction(NOOP, () => {
-            revision = new Revision();
+            revision = getRevision();
 
-            subscribers.forEach((notify) => {
+            for (const notify of subscribers) {
                 notify();
-            });
+            }
         });
-
-        reaction.shouldSubscribe = false;
 
         const observer: IObserver = (callback) => {
             const oldSubscriber = setSubscriber(reaction);
@@ -45,34 +42,15 @@ export function useObserver(): IObserver {
             }
         };
 
-        observer.addSubscription = reaction.addSubscription.bind(reaction);
-
         return {
             _subscribe(notify: NotifyFn): UnsubscribeFn {
-                if (!subscribers.size) {
-                    reaction.shouldSubscribe = true;
-
-                    reaction.subscribe();
-                }
-
                 subscribers.add(notify);
 
                 return () => {
                     subscribers.delete(notify);
-
-                    if (!subscribers.size) {
-                        reaction.unsubscribe();
-
-                        reaction.shouldSubscribe = false;
-                    }
                 };
             },
             _getRevision() {
-                if (!subscribers.size && reaction.missedRun()) {
-                    reaction.updateRevisions();
-
-                    revision = new Revision();
-                }
                 return revision;
             },
             _onBeforeRender() {

@@ -569,7 +569,7 @@ describe("computed", () => {
             const check2 = getCheck();
 
             const [o1, seto1] = observable(1);
-            
+
             const c1 = computed(() => {
                 return o1() * 2;
             });
@@ -695,6 +695,100 @@ describe("computed", () => {
             expect(updates(c1)).toBe(5);
             expect(updates(c2)).toBe(4);
             expect(updates(r1)).toBe(4);
+        });
+
+        it("reaction is not triggered if value does not change mid-chain, o -> v -> c -> r", () => {
+            const check = getCheck();
+            const [o1, seto1] = observable(1);
+            const c1 = computed(() => Math.abs(o1()), check);
+            const c2 = computed(() => c1() * 2);
+
+            let runCount = 0;
+            const r1 = reaction(() => {
+                c2();
+                runCount++;
+            });
+
+            expect(c2()).toBe(2);
+            expect(updates(c2)).toBe(1);
+            expect(updates(c1)).toBe(1);
+            expect(runCount).toBe(1);
+
+            // change value, mid-chain changes
+            seto1(2);
+            expect(c2()).toBe(4);
+            expect(updates(c2)).toBe(2);
+            expect(updates(c1)).toBe(2);
+            expect(runCount).toBe(2);
+
+            // change value, mid-chain does NOT change
+            seto1(-2);
+            expect(c2()).toBe(4);
+            expect(updates(c2)).toBe(2); // should not recompute c2
+            expect(updates(c1)).toBe(3); // c1 recomputes
+            expect(runCount).toBe(2);    // reaction should not run
+        });
+
+        it("reaction is not triggered if value does not change mid-chain with multiple value-checked, o -> v -> v -> r", () => {
+            const check1 = getCheck();
+            const check2 = getCheck();
+            const [o1, seto1] = observable(1);
+            const c1 = computed(() => Math.abs(o1()) - 2, check1);
+            const c2 = computed(() => Math.abs(c1()) - 2, check2);
+
+            let runCount = 0;
+            const r1 = reaction(() => {
+                c2();
+                runCount++;
+            });
+
+            expect(c2()).toBe(-1);
+            expect(updates(c2)).toBe(1);
+            expect(updates(c1)).toBe(1);
+            expect(runCount).toBe(1);
+
+            // c1 recalculates, c2 not, no changes
+            seto1(-1);
+            expect(c2()).toBe(-1);
+            expect(updates(c2)).toBe(1); // c2 should not run
+            expect(updates(c1)).toBe(2); // c1 runs
+            expect(runCount).toBe(1);    // reaction should not run
+        });
+
+        it("reaction is triggered only for changed branch in a diamond with a mid-chain value-checked check, o -> c1/c2 -> c3 -> r", () => {
+            const check = getCheck();
+            const [o1, seto1] = observable(1);
+
+            // c1 changes value on any o1 change
+            const c1 = computed(() => o1() * 2);
+            // c2 is value-checked and does not change value for absolute o1 change
+            const c2 = computed(() => Math.abs(o1()), check);
+
+            // c3 depends on both
+            const c3 = computed(() => c1() + c2());
+
+            let runCount = 0;
+            const r1 = reaction(() => {
+                c3();
+                runCount++;
+            });
+
+            expect(c3()).toBe(3); // 2 + 1
+            expect(updates(c1)).toBe(1);
+            expect(updates(c2)).toBe(1);
+            expect(updates(c3)).toBe(1);
+            expect(runCount).toBe(1);
+
+            // Change o1 to -1.
+            // c1 becomes -2 (changed).
+            // c2 remains 1 (unchanged).
+            seto1(-1);
+
+            expect(c3()).toBe(-1); // -2 + 1
+            expect(updates(c1)).toBe(2); // c1 recomputed
+            expect(updates(c2)).toBe(2); // c2 recomputed but did not change revision
+            expect(updates(c3)).toBe(2); // c3 recomputed because c1 changed
+            expect(runCount).toBe(2);    // reaction ran
         });
 
         it("transaction test 1", () => {
@@ -991,16 +1085,11 @@ describe("computed", () => {
     });
 
     describe("passive state", () => {
-        if (!global.gc) {
-            return;
-        }
-
         it("passive computed is garbage collected when not referenced", async () => {
             const [o1, seto1] = observable(0);
 
             let c1: IComputedGetter<number> | null = computed(() => o1() * 2);
 
-            // @ts-ignore
             const weakRef = new WeakRef(c1);
 
             c1();
@@ -1222,62 +1311,6 @@ describe("reaction", () => {
 
         expect(updates(r1)).toBe(2);
     });
-
-    it("unsubscribe and subscribe work as expected", () => {
-        const [o1, seto1] = observable(1);
-
-        const r1 = new Reaction(() => {
-            trackUpdate(r1);
-            o1();
-        });
-
-        r1.run();
-
-        expect(updates(r1)).toBe(1);
-
-        seto1(2);
-
-        expect(updates(r1)).toBe(2);
-
-        r1.unsubscribe();
-
-        seto1(3);
-
-        expect(updates(r1)).toBe(2);
-
-        r1.subscribe();
-
-        seto1(4);
-
-        expect(updates(r1)).toBe(3);
-
-        r1.destroy();
-    });
-
-    it("missedRun works is true when subscriptions are changed when reaction is unsubscribed", () => {
-        const [o1, seto1] = observable(1);
-
-        const r1 = new Reaction(() => {
-            trackUpdate(r1);
-            o1();
-        });
-
-        r1.run();
-
-        expect(updates(r1)).toBe(1);
-
-        seto1(2);
-
-        expect(updates(r1)).toBe(2);
-        expect(r1.missedRun()).toBe(false);
-
-        r1.unsubscribe();
-
-        seto1(3);
-
-        expect(updates(r1)).toBe(2);
-        expect(r1.missedRun()).toBe(true);
-    });
 });
 
 describe("untracked", () => {
@@ -1439,7 +1472,7 @@ describe("utx", () => {
 
 describe("action", () => {
     it("creates usable function", () => {
-        const a1 = action(() => {});
+        const a1 = action(() => { });
 
         expect(() => a1()).not.toThrow();
     });

@@ -16,7 +16,7 @@ import { notify } from "./common";
 
 export class Observable<T = any> implements IObservableImpl<T> {
     private _revision: IRevision = getRevision();
-    private _subscribers: Set<ISubscriber> = new Set();
+    private _subscribers: Set<WeakRef<ISubscriber>> = new Set();
 
     private declare _value: T;
     private declare readonly _equals: Equals<T>;
@@ -26,12 +26,12 @@ export class Observable<T = any> implements IObservableImpl<T> {
         this._equals = withUntracked(equals);
     }
 
-    _addSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.add(subscriber);
+    _addSubscriber(subscriberRef: WeakRef<ISubscriber>): void {
+        this._subscribers.add(subscriberRef);
     }
 
-    _removeSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.delete(subscriber);
+    _removeSubscriber(subscriberRef: WeakRef<ISubscriber>): void {
+        this._subscribers.delete(subscriberRef);
     }
 
     _getRevision(): IRevision {
@@ -40,9 +40,10 @@ export class Observable<T = any> implements IObservableImpl<T> {
 
     get(): T {
         if (subscriber) {
-            subscriber.addSubscription(this);
+            subscriber._subscriptions.set(this, this._revision);
+            this._subscribers.add(subscriber._weakRef);
         }
-        
+
         return this._value;
     }
 
@@ -54,7 +55,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
         if (arguments.length > 0) {
             if (typeof newValue === "function" && !asIs) {
                 newValue = (newValue as UpdaterFn<T>)(this._value);
-            }   
+            }
 
             if (this._equals(this._value, newValue as T)) {
                 return;
@@ -70,7 +71,7 @@ export class Observable<T = any> implements IObservableImpl<T> {
         this._revision = getRevision();
 
         notify(this._subscribers);
-        
+
         endTx();
     }
 }
