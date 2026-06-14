@@ -15,13 +15,10 @@ export type {
     ReactionFn,
 } from "./core/types";
 export {
-    observable,
     Observable,
-    computed,
     Computed,
-    reaction,
     Reaction,
-    getRevision,
+    newRevision as getRevision,
     tx,
     utx,
     untracked,

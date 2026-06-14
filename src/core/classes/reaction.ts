@@ -1,6 +1,5 @@
 import type {
     Destructor,
-    Disposer,
     IReactionImpl,
     IRevision,
     ReactionFn,
@@ -64,14 +63,4 @@ export class Reaction implements IReactionImpl {
 
         this._destructor = utx(this._fn, this);
     }
-}
-
-export function reaction(fn: ReactionFn, manager?: () => void): Disposer {
-    const r = new Reaction(fn, manager);
-    const destructor = r.destroy.bind(r) as Disposer;
-    destructor.run = r.run.bind(r);
-
-    r.run();
-
-    return destructor;
 }

@@ -12,9 +12,7 @@ export interface ISubscriber {
 export interface ISubscription {
     _getRevision(): IRevision;
 
-    _addSubscriber(subscriberRef: WeakRef<ISubscriber>): void;
-
-    _removeSubscriber(subscriberRef: WeakRef<ISubscriber>): void;
+    _subscribers: Set<WeakRef<ISubscriber>>;
 }
 
 export type IRevision = number;

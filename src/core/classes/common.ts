@@ -15,7 +15,7 @@ export function unsubscribe(
     subscriber: ISubscriber
 ): void {
     for (const [subscription] of subscriptions) {
-        subscription._removeSubscriber(subscriber._weakRef);
+        subscription._subscribers.delete(subscriber._weakRef);
     }
 }
 

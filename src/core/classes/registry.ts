@@ -7,7 +7,7 @@ type HeldValue = Readonly<{
 
 const registry = new FinalizationRegistry<HeldValue>((heldValue) => {
     for (const [subscription] of heldValue._subscriptions) {
-        subscription._removeSubscriber(heldValue._ref);
+        subscription._subscribers.delete(heldValue._ref);
     }
 });
 
