@@ -1,21 +1,25 @@
 import {
     action,
     CheckFn,
-    computed as _computed,
     Computed,
     configure,
     Disposer,
     IComputedGetter,
-    observable,
     Observable,
-    reaction as _reaction,
     Reaction,
     shallowEquals,
     tx,
     untracked,
     utx,
 } from "../src";
-import { ReactionFn } from "../src/core";
+import {
+    Equals,
+    IComputed,
+    IObservable,
+    IObservableGetter,
+    ISetter,
+    ReactionFn,
+} from "../src/core";
 
 const updatesMap = new WeakMap<any, number>();
 
@@ -23,6 +27,44 @@ const updates = (val: any) => updatesMap.get(val) ?? updatesMap.get(val.track) ?
 
 const trackUpdate = (val: any) => {
     updatesMap.set(val, updates(val) + 1);
+};
+
+export function observable<T>(value: T, checkFn?: Equals<T>) {
+    const obs = new Observable(value, checkFn);
+    const get = obs.get.bind(obs) as IObservableGetter<T>;
+    const set = obs.set.bind(obs) as ISetter<T>;
+
+    get.instance = obs;
+    get.revision = obs._getRevision.bind(obs);
+
+    return [get, set] as const;
+}
+
+observable.box = <T>(value: T, checkFn?: Equals<T>): IObservable<T> => {
+    return new Observable(value, checkFn);
+};
+
+observable.prop = <T>(value: T, checkFn?: Equals<T>): T => {
+    return new Observable(value, checkFn) as unknown as T;
+};
+
+export function _computed<T>(fn: () => T, checkFn?: Equals<T>): IComputedGetter<T> {
+    const comp = new Computed(fn, checkFn);
+    const get = comp.get.bind(comp) as IComputedGetter<T>;
+
+    get.instance = comp;
+    get.destroy = comp.destroy.bind(comp);
+    get.revision = comp._getRevision.bind(comp);
+
+    return get;
+}
+
+_computed.box = <T>(fn: () => T, checkFn?: Equals<T>): IComputed<T> => {
+    return new Computed(fn, checkFn);
+};
+
+_computed.prop = <T>(fn: () => T, checkFn?: Equals<T>): T => {
+    return new Computed(fn, checkFn) as unknown as T;
 };
 
 const computed = <T>(fn: () => T, checkFn: CheckFn<T> = () => false) => {
@@ -33,6 +75,16 @@ const computed = <T>(fn: () => T, checkFn: CheckFn<T> = () => false) => {
 
     return comp;
 };
+
+export function _reaction(fn: ReactionFn, manager?: () => void): Disposer {
+    const r = new Reaction(fn, manager);
+    const destructor = r.destroy.bind(r) as Disposer;
+    destructor.run = r.run.bind(r);
+
+    r.run();
+
+    return destructor;
+}
 
 const reaction = (fn: ReactionFn, manager?: () => void) => {
     const t = {};
@@ -726,7 +778,7 @@ describe("computed", () => {
             expect(c2()).toBe(4);
             expect(updates(c2)).toBe(2); // should not recompute c2
             expect(updates(c1)).toBe(3); // c1 recomputes
-            expect(runCount).toBe(2);    // reaction should not run
+            expect(runCount).toBe(2); // reaction should not run
         });
 
         it("reaction is not triggered if value does not change mid-chain with multiple value-checked, o -> v -> v -> r", () => {
@@ -752,7 +804,7 @@ describe("computed", () => {
             expect(c2()).toBe(-1);
             expect(updates(c2)).toBe(1); // c2 should not run
             expect(updates(c1)).toBe(2); // c1 runs
-            expect(runCount).toBe(1);    // reaction should not run
+            expect(runCount).toBe(1); // reaction should not run
         });
 
         it("reaction is triggered only for changed branch in a diamond with a mid-chain value-checked check, o -> c1/c2 -> c3 -> r", () => {
@@ -788,7 +840,7 @@ describe("computed", () => {
             expect(updates(c1)).toBe(2); // c1 recomputed
             expect(updates(c2)).toBe(2); // c2 recomputed but did not change revision
             expect(updates(c3)).toBe(2); // c3 recomputed because c1 changed
-            expect(runCount).toBe(2);    // reaction ran
+            expect(runCount).toBe(2); // reaction ran
         });
 
         it("transaction test 1", () => {
@@ -1472,7 +1524,7 @@ describe("utx", () => {
 
 describe("action", () => {
     it("creates usable function", () => {
-        const a1 = action(() => { });
+        const a1 = action(() => {});
 
         expect(() => a1()).not.toThrow();
     });

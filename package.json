@@ -45,7 +45,7 @@
     "scripts": {
         "build": "yarn run build:onek && yarn run build:react && yarn run build:react-compat && yarn run build:mobx",
         "build:full": "yarn run build:onek --no-compress && yarn run build:react --no-compress && yarn run build:react-compat --no-compress && yarn run build:mobx --no-compress",
-        "build:onek": "yarn exec rimraf ./dist/ && yarn exec microbundle",
+        "build:onek": "yarn exec tsdown",
         "build:react": "cd react && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:react-compat": "cd react-compat && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
         "build:mobx": "cd ./mobx && yarn exec rimraf ./dist/ && yarn exec microbundle --external='onek'",
@@ -143,6 +143,8 @@
             ]
         }
     },
-    "dependencies": {},
+    "dependencies": {
+        "yarn": "^1.22.22"
+    },
     "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

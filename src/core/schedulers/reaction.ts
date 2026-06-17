@@ -1,4 +1,4 @@
-import { Reaction } from "../classes";
+import type { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
 
 let reactionQueue = new Set<Reaction>();
@@ -28,15 +28,17 @@ function runReactions(): void {
     try {
         let i = MAX_REACTION_ITERATIONS;
 
-        // trying not to allocate JS objects here
         while ((reactionQueue.size || swapQueue.size) && --i) {
             const reactions = reactionQueue;
-
             reactionQueue = swapQueue;
 
             for (const reaction of reactions) {
                 try {
-                    reaction.runManager();
+                    if (reaction._shouldRun()) {
+                        reaction._runManager();
+                    } else {
+                        reaction._clean();
+                    }
                 } catch (exception: any) {
                     reactionExceptionHandler(exception);
                 }

@@ -7,11 +7,7 @@ export type {
     Equals as CheckFn,
     UpdaterFn,
     IGetter,
-    IObservableGetter,
-    IComputedGetter,
-    ISetter,
     IOptions,
-    Disposer,
     ReactionFn,
 } from "./core/types";
 export {
@@ -25,6 +21,6 @@ export {
     withUntracked,
     action,
     configure,
-    shallowEquals,
+    // shallowEquals,
     setSubscriber,
 } from "./core";

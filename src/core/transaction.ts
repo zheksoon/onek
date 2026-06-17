@@ -26,8 +26,8 @@ export function utx<T>(fn: () => T, subscriber: MaybeSubscriber = null): T {
     }
 }
 
-export function untracked<T>(fn: () => T): T {
-    const oldSubscriber = setSubscriber(null);
+export function untracked<T>(fn: () => T, subscriber: MaybeSubscriber = null): T {
+    const oldSubscriber = setSubscriber(subscriber);
     try {
         return fn();
     } finally {
