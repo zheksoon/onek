@@ -1,42 +1,29 @@
-import { State } from "./constants";
-
-export type NotifyState = State.MAYBE_DIRTY | State.DIRTY;
-
 export type IdentityFn<T> = T extends (...args: infer Args) => infer R
     ? (...args: Args) => R
     : never;
 
-export interface SubscriberBase {
-    addSubscription(subscription: ISubscription): void;
-}
+export interface ISubscriber {
+    readonly _weakRef: WeakRef<ISubscriber>;
+    readonly _subscriptions: Map<ISubscription, IRevision>;
 
-export interface ISubscriber extends SubscriberBase {
-    _notify(state: NotifyState): void;
+    _notify(): void;
 }
 
 export interface ISubscription {
-    revision(): IRevision;
-
-    _addSubscriber(subscriber: ISubscriber): void;
-
-    _removeSubscriber(subscriber: ISubscriber): void;
-
-    _actualize(willHaveSubscriber: boolean): void;
+    readonly _subscribers: Set<WeakRef<ISubscriber>>;
+    _recomputeAndGetRevision(): IRevision;
 }
 
-export interface IRevision {}
+export type IRevision = number;
 
 export type MaybeSubscriber = ISubscriber | null;
 
 export interface IGettable<T> {
-    get(_subscriber?: ISubscriber): T;
-
-    revision(): IRevision;
+    get(): T;
 }
 
 export interface IObservable<T> extends IGettable<T> {
     set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void;
-
     notify(): void;
 }
 
@@ -46,53 +33,26 @@ export interface IComputed<T> extends IGettable<T> {
     destroy(): void;
 }
 
-export interface IComputedImpl<T> extends IComputed<T>, ISubscriber, ISubscription {
-    _checkAndPassivate(): void;
-}
+export interface IComputedImpl<T> extends IComputed<T>, ISubscriber, ISubscription {}
 
 export type Destructor = (() => void) | null | undefined | void;
 export type ReactionFn = () => Destructor;
-export type Disposer = (() => void) & { run: () => void };
 
 export interface IReaction {
     destroy(): void;
-
     run(): void;
-
-    runManager(): void;
-
-    subscribe(): void;
-
-    unsubscribe(): void;
-
-    unsubscribeAndCleanup(): void;
-
-    updateRevisions(): void;
+    _runManager(): void;
 }
 
 export interface IReactionImpl extends IReaction, ISubscriber {}
 
-export type CheckFn<T> = (prev: T, next: T) => boolean;
+export type Equals<T> = (prev: T, next: T) => boolean;
 export type UpdaterFn<T> = (prevValue: T) => T;
 
 export interface IGetter<T> {
     (subscriber?: ISubscriber): T;
 
     revision(): IRevision;
-}
-
-export interface ISetter<T> {
-    (value?: T | UpdaterFn<T>, asIs?: boolean): void;
-}
-
-export interface IObservableGetter<T> extends IGetter<T> {
-    instance: IObservable<T>;
-}
-
-export interface IComputedGetter<T> extends IGetter<T> {
-    instance: IComputed<T>;
-
-    destroy(): void;
 }
 
 export type IOptions = {

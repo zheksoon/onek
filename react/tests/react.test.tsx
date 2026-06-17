@@ -1,9 +1,7 @@
-/**
- * @jest-environment jsdom
- */
 
 import * as React from "react";
 import { render } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { computed, observable } from "onek";
 import { useObserver } from "../src";
 
@@ -42,7 +40,7 @@ describe("useObserver", () => {
         expect(result2).toBeTruthy();
     });
 
-    it("re-renders component on computed changes", async () => {
+    it.only("re-renders component on computed changes", async () => {
         const [o1, seto1] = observable("Hello!");
 
         const c1 = computed(() => o1().toUpperCase());

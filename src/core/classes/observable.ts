@@ -1,103 +1,54 @@
-import type {
-    CheckFn,
-    IObservable,
-    IObservableGetter,
-    IObservableImpl,
-    IRevision,
-    ISetter,
-    ISubscriber,
-    UpdaterFn,
-} from "../types";
-import { State } from "../constants";
-import { Computed } from "./computed";
-import { Revision } from "./revision";
 import { subscriber } from "../subscriber";
 import { endTx, withUntracked } from "../transaction";
-import { untrackedShallowEquals } from "../utils";
+import type { Equals, IObservableImpl, IRevision, ISubscriber } from "../types";
 import { notify } from "./common";
+import { Computed } from "./computed";
+import { newRevision } from "./revision";
 
 export class Observable<T = any> implements IObservableImpl<T> {
-    private _revision: IRevision = new Revision();
-    private _subscribers: Set<ISubscriber> = new Set();
+    readonly _subscribers: Set<WeakRef<ISubscriber>> = new Set();
 
-    private declare _value: T;
-    private declare readonly _checkFn?: CheckFn<T>;
+    private _revision: IRevision = newRevision();
+    private _value: T;
+    private readonly _equals: Equals<T>;
 
-    constructor(value: T, checkFn?: boolean | CheckFn<T>) {
+    constructor(value: T, equals: Equals<T> = Object.is) {
         this._value = value;
-        this._checkFn = checkFn
-            ? typeof checkFn === "function"
-                ? withUntracked(checkFn)
-                : untrackedShallowEquals
-            : undefined;
+        this._equals = withUntracked(equals);
     }
 
-    _addSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.add(subscriber);
-    }
-
-    _removeSubscriber(subscriber: ISubscriber): void {
-        this._subscribers.delete(subscriber);
-    }
-
-    _actualize(): void {
-        // noop
-    }
-
-    revision(): IRevision {
+    _recomputeAndGetRevision(): IRevision {
         return this._revision;
     }
 
-    get(_subscriber = subscriber): T {
-        if (_subscriber) {
-            _subscriber.addSubscription(this);
+    get(): T {
+        if (subscriber) {
+            subscriber._subscriptions.set(this, this._revision);
+            this._subscribers.add(subscriber._weakRef);
         }
+
         return this._value;
     }
 
-    set(newValue?: T | UpdaterFn<T>, asIs?: boolean): void {
-        if (subscriber && subscriber instanceof Computed) {
+    set(newValue: T): void {
+        if (subscriber instanceof Computed) {
             throw new Error("Changing observable inside of computed");
         }
 
-        if (arguments.length > 0) {
-            if (typeof newValue === "function" && !asIs) {
-                newValue = (newValue as UpdaterFn<T>)(this._value);
-            }
-
-            if (this._checkFn && this._checkFn(this._value, newValue as T)) {
-                return;
-            }
-
-            this._value = newValue as T;
+        if (this._equals(this._value, newValue)) {
+            return;
         }
+
+        this._value = newValue as T;
 
         this.notify();
     }
 
     notify(): void {
-        this._revision = new Revision();
+        this._revision = newRevision();
 
-        notify(this._subscribers, State.DIRTY);
+        notify(this._subscribers);
+
         endTx();
     }
 }
-
-export function observable<T>(value: T, checkFn?: boolean | CheckFn<T>) {
-    const obs = new Observable(value, checkFn);
-    const get = obs.get.bind(obs) as IObservableGetter<T>;
-    const set = obs.set.bind(obs) as ISetter<T>;
-
-    get.instance = obs;
-    get.revision = obs.revision.bind(obs);
-
-    return [get, set] as const;
-}
-
-observable.box = <T>(value: T, checkFn?: boolean | CheckFn<T>): IObservable<T> => {
-    return new Observable(value, checkFn);
-};
-
-observable.prop = <T>(value: T, checkFn?: boolean | CheckFn<T>): T => {
-    return new Observable(value, checkFn) as unknown as T;
-};

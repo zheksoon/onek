@@ -8,6 +8,8 @@ export default {
     testEnvironment: "jsdom",
     moduleNameMapper: {
         onek: "<rootDir>/src/",
+        "^react$": "<rootDir>/node_modules/react",
+        "^react-dom$": "<rootDir>/node_modules/react-dom",
     },
     collectCoverage: true,
     coverageDirectory: "coverage",

@@ -164,13 +164,11 @@ Please note that while it's similar to React's `useState`, it shouldn't be used 
 <details>
   <summary><b>Extra:</b> equality check argument</summary>
 
-`observable` supports an equality check function as a second argument. This function can be used to prevent unnecessary updates when the value hasn't effectively changed. You can also use `true` to use the built-in `shallowEquals` implementation:
+`observable` supports an equality check function as a second argument. This function can be used to prevent unnecessary updates when the value hasn't effectively changed. By default, it's `Object.is`, so setting the same value to the observable won't do anything. Onek provides a built-in `shallowEquals` function that can be used as an equality check:
 
 ```js
 import { shallowEquals } from "onek";
 
-const [greetings, setGreetings] = observable(["hello"], true);
-// or equivalently
 const [greetings, setGreetings] = observable(["hello"], shallowEquals);
 
 // setting an equal value doesn't trigger updates

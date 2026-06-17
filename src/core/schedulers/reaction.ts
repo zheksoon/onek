@@ -1,9 +1,8 @@
-import { Reaction } from "../classes";
+import type { Reaction } from "../classes";
 import { MAX_REACTION_ITERATIONS } from "../constants";
-import { runSubscribersCheck } from "./subscribersCheck";
-import { actualizationQueue, runActualizations } from "./stateActualization";
 
-let reactionQueue: Array<Reaction> = [];
+let reactionQueue = new Set<Reaction>();
+let swapQueue = new Set<Reaction>();
 let isReactionRunScheduled = false;
 
 let reactionScheduler = (runner: () => void) => {
@@ -22,40 +21,46 @@ export function setReactionExceptionHandler(handler: typeof reactionExceptionHan
 }
 
 export function scheduleReaction(reaction: Reaction) {
-    reactionQueue.push(reaction);
+    reactionQueue.add(reaction);
 }
 
 function runReactions(): void {
     try {
         let i = MAX_REACTION_ITERATIONS;
-        while ((reactionQueue.length || actualizationQueue.size) && --i) {
-            runActualizations();
 
+        while ((reactionQueue.size || swapQueue.size) && --i) {
             const reactions = reactionQueue;
-            reactionQueue = [];
-            reactions.forEach((reaction) => {
+            reactionQueue = swapQueue;
+
+            for (const reaction of reactions) {
                 try {
-                    reaction.runManager();
+                    if (reaction._shouldRun()) {
+                        reaction._runManager();
+                    } else {
+                        reaction._clean();
+                    }
                 } catch (exception: any) {
                     reactionExceptionHandler(exception);
                 }
-            });
+            }
+
+            reactions.clear();
+
+            swapQueue = reactions;
         }
+
         if (!i) {
             throw new Error("Infinite reactions loop");
         }
     } finally {
         isReactionRunScheduled = false;
-        reactionQueue = [];
-
-        runSubscribersCheck();
+        reactionQueue.clear();
+        swapQueue.clear();
     }
 }
 
 export function scheduleReactionRunner(): void {
-    const shouldRunReactions = reactionQueue.length || actualizationQueue.size;
-
-    if (!isReactionRunScheduled && shouldRunReactions) {
+    if (!isReactionRunScheduled && reactionQueue.size) {
         isReactionRunScheduled = true;
         reactionScheduler(runReactions);
     }

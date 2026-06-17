@@ -1,36 +1,27 @@
-import { NotifyState, ISubscriber, ISubscription } from "../types";
-import { Revision } from "./revision";
+import { IRevision, ISubscriber, ISubscription } from "../types";
 
-export function checkRevisions(subscriptions: Map<ISubscription, Revision>) {
-    let revisionsChanged = false;
+export function revisionsChanged(subscriptions: Map<ISubscription, IRevision>) {
+    for (const [subscription, revision] of subscriptions) {
+        if (subscription._recomputeAndGetRevision() !== revision) {
+            return true;
+        }
+    }
 
-    subscriptions.forEach((revision, subscription) => {
-        revisionsChanged ||= subscription.revision() !== revision;
-    });
-
-    return revisionsChanged;
+    return false;
 }
 
-export function unsubscribe(
-    subscriptions: Map<ISubscription, Revision>,
-    subscriber: ISubscriber
-): void {
-    subscriptions.forEach((_revision, subscription) => {
-        subscription._removeSubscriber(subscriber);
-    });
+export function unsubscribeAndCleanup(subscriber: ISubscriber): void {
+    for (const [subscription] of subscriber._subscriptions) {
+        subscription._subscribers.delete(subscriber._weakRef);
+    }
+    subscriber._subscriptions.clear();
 }
 
-export function subscribe(
-    subscriptions: Map<ISubscription, Revision>,
-    subscriber: ISubscriber
-): void {
-    subscriptions.forEach((_revision, subscription) => {
-        subscription._addSubscriber(subscriber);
-    });
-}
-
-export function notify(subscribers: Set<ISubscriber>, state: NotifyState): void {
-    subscribers.forEach((subscriber) => {
-        subscriber._notify(state);
-    });
+export function notify(subscribers: Set<WeakRef<ISubscriber>>): void {
+    for (const ref of subscribers) {
+        const subscriber = ref.deref();
+        if (subscriber !== undefined) {
+            subscriber._notify();
+        }
+    }
 }

@@ -1,12 +1,17 @@
 {
     "compilerOptions": {
         "rootDir": "./src",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "esModuleInterop": true,
         "target": "ES2017",
+        "lib": [
+            "ES2021",
+            "DOM"
+        ],
         "module": "ESNext",
         "strict": true,
-        "jsx": "react"
+        "jsx": "react",
+        "isolatedModules": true
     },
     "include": [
         "./src/**/*"
